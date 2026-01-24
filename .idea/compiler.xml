@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="huacai-framework" />
+        <module name="huacai-generator" />
+        <module name="huacai-common" />
+        <module name="huacai-admin" />
+        <module name="huacai-assisting" />
+        <module name="huacai-system" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="huacai" options="-parameters" />
+      <module name="huacai-admin" options="-parameters" />
+      <module name="huacai-assisting" options="-parameters" />
+      <module name="huacai-common" options="-parameters" />
+      <module name="huacai-framework" options="-parameters" />
+      <module name="huacai-generator" options="-parameters" />
+      <module name="huacai-system" options="-parameters" />
+    </option>
+  </component>
+</project>
