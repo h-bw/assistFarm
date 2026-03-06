@@ -143,4 +143,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             ( #{item.opId}, #{item.ordersId}, #{item.productsId}, #{item.productsName}, #{item.image}, #{item.specs}, #{item.origin}, #{item.price}, #{item.quantity})
         </foreach>
     </insert>
+    <!-- 获取用户-商品交互（按订单状态过滤） -->
+    <select id="selectUserProductInteractions" resultType="map">
+        SELECT o.user_id, op.products_id, SUM(op.quantity) AS interaction
+        FROM orders_products op
+                 JOIN orders o ON op.orders_id = o.orders_id
+        WHERE o.status = #{status}
+        GROUP BY o.user_id, o.products_id
+    </select>
+
+    <!-- 获取用户最近购买的商品ID（按订单时间倒序，去重） -->
+    <select id="selectRecentProductIdsByUserId" resultType="string">
+        SELECT DISTINCT op.products_id
+        FROM orders_products op
+                 JOIN orders o ON op.orders_id = o.orders_id
+        WHERE o.user_id = #{userId} AND o.status IN ('已完成', '待收货', '待发货')
+        ORDER BY o.create_time DESC
+            LIMIT #{limit}
+    </select>
+
+    <!-- 获取热门商品（按总销量降序） -->
+    <select id="selectHotProductIds" resultType="string">
+        SELECT products_id
+        FROM orders_products
+        GROUP BY products_id
+        ORDER BY SUM(quantity) DESC
+            LIMIT #{limit}
+    </select>
 </mapper>
