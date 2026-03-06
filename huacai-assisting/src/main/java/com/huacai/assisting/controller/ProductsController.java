@@ -1,6 +1,7 @@
 package com.huacai.assisting.controller;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.huacai.assisting.vo.ReplenishVo;
@@ -157,6 +158,15 @@ public class ProductsController extends BaseController {
 
         //更新产品的库存
         return toAjax(productsService.updateProducts(products));
+    }
+    //根据id批量查询产品
+    @PostMapping("/listByIds")
+    public AjaxResult listByIds(@RequestBody List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return AjaxResult.success(new ArrayList<>());
+        }
+        List<Products> list = productsService.selectProductsListByIds(ids);
+        return AjaxResult.success(list);
     }
 
 }

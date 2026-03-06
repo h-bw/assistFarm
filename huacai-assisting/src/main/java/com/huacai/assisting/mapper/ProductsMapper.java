@@ -2,6 +2,8 @@ package com.huacai.assisting.mapper;
 
 import java.util.List;
 import com.huacai.assisting.domain.Products;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 农户产品Mapper接口
@@ -9,6 +11,7 @@ import com.huacai.assisting.domain.Products;
  * @author huacai
  * @date 2025-08-12
  */
+@Mapper
 public interface ProductsMapper 
 {
     /**
@@ -58,4 +61,5 @@ public interface ProductsMapper
      * @return 结果
      */
     public int deleteProductsByProductsIds(String[] productsIds);
+    List<Products> selectProductsListByIds(@Param("list") List<String> ids);
 }

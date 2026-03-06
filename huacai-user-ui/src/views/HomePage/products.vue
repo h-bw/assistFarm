@@ -1,154 +1,131 @@
 <template>
-    <!-- 产品列表容器 -->
-    <div class="products-container">
-        <!-- 筛选区域 -->
-        <div class="filter-section">
-            <el-row :gutter="24">
-                <!-- 搜索输入框占20列 -->
-                <el-col :span="20">
-                    <el-input
-                            v-model="queryParams.name"
-                            placeholder="请输入关键词进行查询"
-                            clearable
-                            @keyup.enter="handleQuery"
-                    />
-                </el-col>
-                <!-- 按钮区域占4列 -->
-                <el-col :span="4">
-                    <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-                    <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-                </el-col>
-            </el-row>
-        </div>
+  <div class="products-container">
+    <!-- 推荐板块放在筛选区域上方 -->
+    <Recommend :userId="userId" :topN="6" />
 
-        <!-- 产品列表展示区域 -->
-        <div class="product-list" v-loading="loading">
-            <el-row :gutter="24">
-                <el-col :span="6" v-for="product in productsList" :key="product.productsId">
-                    <!-- 产品卡片, 点击跳转到详情页 -->
-                    <div class="product-card" @click="goToProductDetail(product.productsId)">
-                        <!-- 产品图片区域 -->
-                        <div class="product-image">
-                            <img :src="baseUrl + product.image" alt="">
-                            <!-- 产品操作按钮(加入购物车) -->
-                            <div class="product-actions">
-                                <el-button v-loading="loading" type="primary" size="small"
-                                           round @click.stop="addToCart(product)">
-                                    加入购物车
-                                </el-button>
-                            </div>
-                        </div>
-                        <!-- 产品信息区域 -->
-                        <div class="product-info">
-                            <h3 class="product-name">{{ product.name }}</h3>
-                            <p class="product-origin">产地: {{ product.origin }}</p>
-                            <div class="product-price">
-                                <span class="current-price">¥{{ product.price }}</span>
-                            </div>
-                        </div>
-
-                    </div>
-                </el-col>
-            </el-row>
-        </div>
-
-        <!-- 分页组件 -->
-        <div class="pagination">
-            <pagination
-                    v-show="total>0"
-                    :total="total"
-                    v-model:page="queryParams.pageNum"
-                    v-model:limit="queryParams.pageSize"
-                    @pagination="getList"
-                    :page-sizes="[8,16,32]"
-            />
-        </div>
-
+    <!-- 筛选区域 -->
+    <div class="filter-section">
+      <el-row :gutter="24">
+        <el-col :span="20">
+          <el-input
+              v-model="queryParams.name"
+              placeholder="请输入关键词进行查询"
+              clearable
+              @keyup.enter="handleQuery"
+          />
+        </el-col>
+        <el-col :span="4">
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        </el-col>
+      </el-row>
     </div>
+
+    <!-- 产品列表展示区域 -->
+    <div class="product-list" v-loading="loading">
+      <el-row :gutter="24">
+        <el-col :span="6" v-for="product in productsList" :key="product.productsId">
+          <div class="product-card" @click="goToProductDetail(product.productsId)">
+            <div class="product-image">
+              <img :src="baseUrl + product.image" alt="">
+              <div class="product-actions">
+                <el-button type="primary" size="small" round @click.stop="addToCart(product)">
+                  加入购物车
+                </el-button>
+              </div>
+            </div>
+            <div class="product-info">
+              <h3 class="product-name">{{ product.name }}</h3>
+              <p class="product-origin">产地: {{ product.origin }}</p>
+              <div class="product-price">
+                <span class="current-price">¥{{ product.price }}</span>
+              </div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
+
+    <!-- 分页组件 -->
+    <div class="pagination">
+      <pagination
+          v-show="total>0"
+          :total="total"
+          v-model:page="queryParams.pageNum"
+          v-model:limit="queryParams.pageSize"
+          @pagination="getList"
+          :page-sizes="[8,16,32]"
+      />
+    </div>
+  </div>
 </template>
 
+
 <script setup>
-import {selectList} from "@/api/assisting/products.js";
-import {addCart} from "@/api/assisting/cart.js";
-import {ElMessage} from "element-plus";
-import {useRouter} from "vue-router";
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { selectList } from "@/api/assisting/products.js"
+import { addCart } from "@/api/assisting/cart.js"
+import { ElMessage } from "element-plus"
+import useUserStore from '@/store/modules/user'  // 导入用户 store
+import Recommend from '@/components/Recommend/index.vue'  // 导入推荐组件
 
-//获取基础URL(从环境变量)
+const userStore = useUserStore()
+const userId = computed(() => userStore.id)  // 获取用户ID
+
 const baseUrl = import.meta.env.VITE_APP_BASE_API
-
-//获取路由实例
 const router = useRouter()
 
-//跳转到产品详情页面
+// 其余代码保持不变
 const goToProductDetail = (productsId) => {
-    router.push(`/index/productDetail/${productsId}`)
+  router.push(`/index/productDetail/${productsId}`)
 }
 
-//查询参数
 const queryParams = ref({
-    pageNum: 1,
-    pageSize: 8,
-    name: null,
-    userId: null,
-    userName: null
+  pageNum: 1,
+  pageSize: 8,
+  name: null,
+  userId: null,
+  userName: null
 })
 
-/** 搜索按钮操作 */
 const handleQuery = () => {
-    queryParams.value.pageNum = 1
-    getList()
+  queryParams.value.pageNum = 1
+  getList()
 }
 
-/** 重置按钮操作 */
 const resetQuery = () => {
-    queryParams.value.name = null
-    handleQuery()
+  queryParams.value.name = null
+  handleQuery()
 }
 
-//添加产品到购物车
 const addToCart = (product) => {
-    //打开加载状态
-    loading.value = true
-    const item = {
-        productsId: product.productsId,
-        quantity: 1 //默认数量为1
-    }
-    //调用api添加购物车信息
-    addCart(item).then(res => {
-        //成功提示
-        ElMessage.success('已添加到购物车')
-        //关闭加载状态
-        loading.value = false
-    })
+  loading.value = true
+  const item = {
+    productsId: product.productsId,
+    quantity: 1
+  }
+  addCart(item).then(res => {
+    ElMessage.success('已添加到购物车')
+    loading.value = false
+  })
 }
 
-//加载状态
 const loading = ref(false)
-
-//产品列表数据
 const productsList = ref([])
-
-//产品总数
 const total = ref(0)
 
-//获取产品列表数据
 const getList = () => {
-    //显示加载状态
-    loading.value = true
-    //调用api查询数据
-    selectList(queryParams.value).then(res => {
-        //将产品总数赋值给total
-        total.value = res.total
-        //将查询到的列表数据赋值给productsList
-        productsList.value = res.rows
-        //关闭加载状态
-        loading.value = false
-    })
+  loading.value = true
+  selectList(queryParams.value).then(res => {
+    total.value = res.total
+    productsList.value = res.rows
+    loading.value = false
+  })
 }
 
-//组件加载时自动获取产品列表
 onMounted(() => {
-    getList()
+  getList()
 })
 </script>
 

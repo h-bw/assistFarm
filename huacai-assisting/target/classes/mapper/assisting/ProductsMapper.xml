@@ -114,4 +114,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{productsId}
         </foreach>
     </delete>
+
+    <select id="selectProductsListByIds" resultMap="ProductsResult">
+        SELECT * FROM products WHERE products_id IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
 </mapper>

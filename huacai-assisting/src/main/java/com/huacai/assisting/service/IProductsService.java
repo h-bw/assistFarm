@@ -73,4 +73,10 @@ public interface IProductsService
      * @return
      */
     List<Products> selectList(Products products);
+    /**
+     * 根据ID列表查询商品列表
+     * @param ids 商品ID列表
+     * @return 商品列表
+     */
+    List<Products> selectProductsListByIds(List<String> ids);
 }
