@@ -149,7 +149,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         FROM orders_products op
                  JOIN orders o ON op.orders_id = o.orders_id
         WHERE o.status = #{status}
-        GROUP BY o.user_id, o.products_id
+        GROUP BY o.user_id, op.products_id
     </select>
 
     <!-- 获取用户最近购买的商品ID（按订单时间倒序，去重） -->
