@@ -199,14 +199,15 @@
 
 <script setup>
 import useUserStore from "@/store/modules/user.js";
-import {listOrders, payment, updateOrders} from "@/api/assisting/orders.js";
+import {listOrders, updateOrders} from "@/api/assisting/orders.js";
 import {useRouter} from "vue-router";
-import {ElLoading, ElMessage, ElMessageBox} from "element-plus";
+import {ElMessage, ElMessageBox} from "element-plus";
 
 const router = useRouter()
 const {proxy} = getCurrentInstance()
 const {order_status} = proxy.useDict('order_status')
 const baseUrl = import.meta.env.VITE_APP_BASE_API
+const backendUrl = 'http://localhost:8080'
 
 //是否打开对话框
 const open = ref(false)
@@ -282,21 +283,7 @@ const confirmPayment = (ordersId) => {
         }
     )
         .then(() => {
-            //打开加载状态
-            const loading = ElLoading.service({
-                lock: true,
-                text: '支付中...',
-                background: 'rgba(0, 0, 0, 0.7)',
-            })
-            //调用支付api进行支付
-            payment(ordersId).then(res => {
-                //提示支付成功
-                ElMessage({type: 'success', message: '支付成功~',})
-                //刷新列表
-                getList()
-                //关闭加载状态
-                loading.close()
-            })
+            window.location.href = `${backendUrl}/api/pay/${ordersId}`
         })
         .catch(() => {
             ElMessage({type: 'info', message: '取消支付',})

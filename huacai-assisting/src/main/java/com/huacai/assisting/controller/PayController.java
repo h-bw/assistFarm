@@ -1,6 +1,7 @@
 package com.huacai.assisting.controller;
 
 import com.huacai.assisting.service.PayService;
+import com.huacai.common.annotation.Anonymous;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
+@Anonymous
 @RequestMapping("/api/pay")
 @RequiredArgsConstructor
 public class PayController {
