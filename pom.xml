@@ -40,7 +40,8 @@
     <dependencyManagement>
         <dependencies>
 
-            <!-- SpringBoot的依赖配置-->
+            <!--
+            SpringBoot的依赖配置-->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -183,6 +184,13 @@
                 <groupId>com.huacai</groupId>
                 <artifactId>huacai-assisting</artifactId>
                 <version>${huacai.version}</version>
+            </dependency>
+
+            <!-- 支付宝 -->
+            <dependency>
+                <groupId>com.alipay.sdk</groupId>
+                <artifactId>alipay-sdk-java</artifactId>
+                <version>4.38.0.ALL</version>
             </dependency>
 
         </dependencies>

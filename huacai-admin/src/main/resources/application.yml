@@ -137,3 +137,14 @@ xss:
   excludes: /system/notice
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
+
+# 支付宝
+alipay:
+  app-id: 你的沙盒AppId          # 支付宝沙盒控制台获取
+  merchant-private-key: 你的应用私钥
+  alipay-public-key: 支付宝公钥
+  notify-url: http://你的服务器地址/api/pay/notify   # 异步通知地址（需外网可访问，可用 ngrok）
+  return-url: http://localhost:8080/order/list       # 支付成功跳转地址
+  gateway-url: https://openapi-sandbox.dl.alipaydev.com/gateway.do  # 沙盒网关
+  charset: UTF-8
+  sign-type: RSA2
