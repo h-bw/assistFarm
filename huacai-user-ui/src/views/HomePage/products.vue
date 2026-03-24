@@ -92,7 +92,17 @@
       </el-row>
 
       <div v-if="!loading && productsList.length === 0" class="empty-box">
-        <el-empty description="未查询到符合条件的商品" />
+        <div class="empty-state-card">
+          <el-empty description="未查询到符合条件的商品">
+            <template #description>
+              <div class="empty-state-text">
+                <strong>没有找到匹配商品</strong>
+                <p>可以尝试重置筛选条件，重新浏览更多助农产品。</p>
+              </div>
+            </template>
+            <el-button type="primary" @click="resetQuery">重置筛选</el-button>
+          </el-empty>
+        </div>
       </div>
     </div>
 
@@ -462,6 +472,26 @@ onMounted(() => {
 
 .empty-box {
   padding: 50px 0;
+}
+
+.empty-state-card {
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px dashed rgba(109, 157, 86, 0.24);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.empty-state-text strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #274533;
+  font-size: 18px;
+}
+
+.empty-state-text p {
+  margin: 0;
+  color: #6d8177;
+  line-height: 1.8;
 }
 
 .pagination {

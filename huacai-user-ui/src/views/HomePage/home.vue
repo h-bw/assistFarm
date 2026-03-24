@@ -129,7 +129,17 @@
         </div>
 
         <div v-else class="policy-empty">
-          <el-empty description="暂未查询到政策内容" />
+          <div class="empty-state-card">
+            <el-empty description="暂未查询到政策内容">
+              <template #description>
+                <div class="empty-state-text">
+                  <strong>政策内容暂未加载</strong>
+                  <p>可以先浏览助农产品，或稍后进入政策中心查看更新内容。</p>
+                </div>
+              </template>
+              <el-button type="primary" @click="goToProducts">浏览产品</el-button>
+            </el-empty>
+          </div>
         </div>
       </section>
     </div>
@@ -602,6 +612,26 @@ onMounted(() => {
 
 .policy-empty {
   padding: 12px 0;
+}
+
+.empty-state-card {
+  padding: 12px;
+  border-radius: 22px;
+  border: 1px dashed rgba(92, 153, 88, 0.22);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.empty-state-text strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #254431;
+  font-size: 18px;
+}
+
+.empty-state-text p {
+  margin: 0;
+  color: #6d8177;
+  line-height: 1.8;
 }
 
 @media (max-width: 1200px) {

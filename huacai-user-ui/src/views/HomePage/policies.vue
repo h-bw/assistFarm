@@ -153,7 +153,17 @@
           </template>
 
           <div v-else-if="!featuredPolicy" class="empty-policies">
-            <el-empty description="暂无相关政策内容" />
+            <div class="empty-state-card">
+              <el-empty description="暂无相关政策内容">
+                <template #description>
+                  <div class="empty-state-text">
+                    <strong>当前没有匹配的政策信息</strong>
+                    <p>可以重置搜索条件，或回到全部分类查看平台整理的政策摘要。</p>
+                  </div>
+                </template>
+                <el-button type="success" @click="handleReset">重置筛选</el-button>
+              </el-empty>
+            </div>
           </div>
         </div>
 
@@ -699,6 +709,26 @@ onMounted(() => {
 .empty-policies {
   grid-column: 1 / -1;
   padding: 60px 0;
+}
+
+.empty-state-card {
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px dashed rgba(91, 149, 98, 0.24);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.empty-state-text strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #264532;
+  font-size: 18px;
+}
+
+.empty-state-text p {
+  margin: 0;
+  color: #6e8277;
+  line-height: 1.8;
 }
 
 .policies-pagination {

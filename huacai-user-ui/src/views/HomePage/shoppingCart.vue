@@ -1,414 +1,439 @@
 <template>
-  <!-- 购物车容器 -->
-    <div class="cart-container">
-        <!-- 购物车主题部分 -->
-        <div class="cart-main" v-loading="loading">
-            <!-- 购物车头部区域 -->
-            <div class="cart-header">
-                <h2>我的购物车</h2>
-                <div class="cart-tips">
-                    <!-- 显示购物车的商品总数 -->
-                    <span>共 {{ total }} 件产品</span>
-                </div>
-            </div>
-
-            <!-- 购物车为空的提示 -->
-            <div class="cart-empty" v-if="cartList.length === 0">
-                <el-empty description="购物车空空如也~">
-                    <el-button type="primary" @click="router.push('/index/home')">去逛逛</el-button>
-                </el-empty>
-            </div>
-
-            <!-- 购物车商品列表 (当有商品时显示) -->
-            <div class="cart-items" v-else>
-                <el-table :data="cartList" style="width: 100%;" border @selection-change="handleSelectionChange">
-                    <!-- 选择列(复选框) -->
-                    <el-table-column type="selection" width="55" align="center"/>
-
-                    <!-- 商品信息列 -->
-                    <el-table-column label="商品信息" width="400">
-                        <template #default="{ row }">
-                            <div class="product-info-cell">
-                                <!-- 商品图片 -->
-                                <img :src="baseUrl + row.image" class="product-image" alt="">
-                                <div class="product-details">
-                                    <!-- 商品名称 -->
-                                    <div class="product-name">{{ row.productsName }}</div>
-                                    <!-- 商品规格 -->
-                                    <div class="product-origin">规格: {{ row.specs }}</div>
-                                    <!-- 商品产地 -->
-                                    <div class="product-origin">产地: {{ row.origin }}</div>
-                                    <!-- 农户信息 -->
-                                    <div class="product-origin">来自农户: {{ row.toUserName }}</div>
-                                </div>
-                            </div>
-                        </template>
-                    </el-table-column>
-
-                    <!-- 单价列 -->
-                    <el-table-column label="单价" width="120" align="center">
-                        <template #default="{ row }">
-                            <div class="product-price">¥{{ row.price.toFixed(2) }}</div>
-                        </template>
-                    </el-table-column>
-
-                    <!-- 数量列(带数量选择器) -->
-                    <el-table-column label="数量" width="300" align="center">
-                        <template #default="{ row }">
-                            <el-input-number
-                                    v-model="row.quantity"
-                                    :min="1"
-                                    :max="999"
-                                    size="large"
-                                    @change="handleQuantityChange(row)"
-                            />
-                        </template>
-                    </el-table-column>
-
-                    <!-- 小计列(单价 * 数量) -->
-                    <el-table-column label="小计" align="center">
-                        <template #default="{ row }">
-                            <div class="product-subtotal">¥{{ (row.price * row.quantity).toFixed(2) }}</div>
-                        </template>
-                    </el-table-column>
-
-                    <!-- 操作列(删除按钮) -->
-                    <el-table-column label="操作" width="80" align="center">
-                        <template #default="{ row }">
-                            <el-button
-                                    type="danger"
-                                    size="small"
-                                    :icon="Delete"
-                                    circle
-                                    @click="removeItem(row.cartId)"
-                            />
-                        </template>
-                    </el-table-column>
-                </el-table>
-            </div>
-
-            <!-- 购物车底部结算栏 (当有产品时显示) -->
-            <div class="cart-footer" v-if="cartList.length > 0">
-                <div class="footer-left">
-                    <div class="total-info">
-                        <!-- 合计金额 -->
-                        <div class="total-amount">
-                            合计: <span class="amount">¥{{ totalAmount.toFixed(2) }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="footer-right">
-                    <!-- 结算按钮 (当选中商品时才可点击)-->
-                    <el-button
-                            type="primary"
-                            size="large"
-                            @click="checkout"
-                            :disabled="selectedItems.length === 0"
-                    >
-                        去结算
-                    </el-button>
-                </div>
-            </div>
-
+  <div class="cart-page">
+    <section class="cart-hero">
+      <div>
+        <p class="hero-kicker">购物车</p>
+        <h1 class="hero-title">整理待结算商品并快速进入订单流程</h1>
+        <p class="hero-description">
+          购物车用于集中展示已选择商品，支持数量调整、删除和勾选结算，方便完整演示商城交易闭环。
+        </p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span>商品数量</span>
+          <strong>{{ total }}</strong>
         </div>
-    </div>
+        <div class="stat-card">
+          <span>已选商品</span>
+          <strong>{{ selectedItems.length }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="cart-main" v-loading="loading">
+      <div class="cart-header">
+        <div>
+          <h2>我的购物车</h2>
+          <p>支持批量勾选、数量调整和一键结算</p>
+        </div>
+        <div class="cart-tips">
+          <span>共 {{ total }} 件产品</span>
+        </div>
+      </div>
+
+      <div class="cart-empty" v-if="cartList.length === 0">
+        <div class="empty-state-card">
+          <el-empty description="购物车空空如也~">
+            <template #description>
+              <div class="empty-state-text">
+                <strong>购物车里还没有商品</strong>
+                <p>去商品页挑选几件助农产品，加入购物车后就能继续演示结算流程。</p>
+              </div>
+            </template>
+            <el-button type="primary" @click="router.push('/index/products')">去逛逛</el-button>
+          </el-empty>
+        </div>
+      </div>
+
+      <div class="cart-items" v-else>
+        <el-table :data="cartList" style="width: 100%" border @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="55" align="center" />
+
+          <el-table-column label="商品信息" min-width="360">
+            <template #default="{ row }">
+              <div class="product-info-cell">
+                <img :src="baseUrl + row.image" class="product-image" alt="">
+                <div class="product-details">
+                  <div class="product-name">{{ row.productsName }}</div>
+                  <div class="product-origin">规格：{{ row.specs }}</div>
+                  <div class="product-origin">产地：{{ row.origin }}</div>
+                  <div class="product-origin">来自农户：{{ row.toUserName }}</div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="单价" width="130" align="center">
+            <template #default="{ row }">
+              <div class="product-price">¥{{ Number(row.price).toFixed(2) }}</div>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="数量" width="220" align="center">
+            <template #default="{ row }">
+              <el-input-number
+                v-model="row.quantity"
+                :min="1"
+                :max="999"
+                size="large"
+                @change="handleQuantityChange(row)"
+              />
+            </template>
+          </el-table-column>
+
+          <el-table-column label="小计" width="140" align="center">
+            <template #default="{ row }">
+              <div class="product-subtotal">¥{{ (Number(row.price) * Number(row.quantity)).toFixed(2) }}</div>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="操作" width="90" align="center">
+            <template #default="{ row }">
+              <el-button
+                type="danger"
+                size="small"
+                :icon="Delete"
+                circle
+                @click="removeItem(row.cartId)"
+              />
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <div class="cart-footer" v-if="cartList.length > 0">
+        <div class="footer-left">
+          <div class="total-info">
+            <span class="total-label">合计金额</span>
+            <div class="total-amount">
+              <span class="amount">¥{{ totalAmount.toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="footer-right">
+          <el-button type="primary" size="large" @click="checkout" :disabled="selectedItems.length === 0">
+            去结算
+          </el-button>
+        </div>
+      </div>
+    </section>
+  </div>
 </template>
 
 <script setup>
-import {delCart, listCart, updateCart} from "@/api/assisting/cart.js";
-import {useRouter} from "vue-router";
-import {Delete} from "@element-plus/icons-vue";
-import {ElMessage, ElMessageBox} from "element-plus";
-import useUserStore from "@/store/modules/user.js";
-import {useCartStore} from "@/store/modules/cart.js";
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { Delete } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { delCart, listCart, updateCart } from '@/api/assisting/cart.js'
+import useUserStore from '@/store/modules/user.js'
+import { useCartStore } from '@/store/modules/cart.js'
 
-//获取路由实例
 const router = useRouter()
-
-//获取基础URL(从环境变量)
 const baseUrl = import.meta.env.VITE_APP_BASE_API
-
-//选中的商品数组
 const selectedItems = ref([])
-
-//获取购物车 Store 的实例
 const cartStore = useCartStore()
-
-//去结算的方法
-const checkout = () => {
-    if (selectedItems.value.length === 0) {
-        ElMessage.warning('请先选择要结算的产品')
-        return
-    }
-
-    //将选中的商品存储到状态管理
-    cartStore.setCheckoutItems(selectedItems.value)
-
-    // 跳转到结算页面
-    router.push('/index/checkout')
-}
-
-//处理表格选择变化事件
-const handleSelectionChange = (selection) => {
-    selectedItems.value = selection
-}
-
-//处理商品数量变化的事件
-const handleQuantityChange = (item) => {
-    const form = {
-        cartId: item.cartId,
-        quantity: item.quantity
-    }
-    //调用api更新购物车中的商品数量
-    updateCart(form)
-}
-
-//从购物车中删除单个商品
-const removeItem = (cartId) => {
-    //显示确认对话框
-    ElMessageBox.confirm(
-        '确认删除该商品吗?',
-        '提示',
-        {confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning',}
-    )
-        .then(() => {
-            //用户确认后调用删除api
-            delCart(cartId).then(res => {
-                //删除成功后刷新列表
-                getList()
-                ElMessage({type: 'success', message: '删除成功',})
-            })
-        })
-        .catch(() => {
-            ElMessage({type: 'info', message: '取消删除',})
-        })
-}
-
-//计算总金额 ((选中商品的价格 * 数量)的总和)
-const totalAmount = computed(() => {
-    return selectedItems.value.reduce((total, item) => total + (item.price * item.quantity), 0)
-})
-
-//加载状态
 const loading = ref(false)
-
-//获取当前登录用户的信息
 const loginUser = useUserStore()
 
-//查询参数
 const queryParams = ref({
-    pageNum: 1,
-    pageSize: 10,
-    productsId: null,
-    userId: loginUser.id,
-    productsName: null,
-    createUserName: null,
-    toUserName: null,
+  pageNum: 1,
+  pageSize: 10,
+  productsId: null,
+  userId: loginUser.id,
+  productsName: null,
+  createUserName: null,
+  toUserName: null
 })
 
-//购物车数据
 const cartList = ref([])
-
-//数据综述
 const total = ref(0)
 
-//获取购物车列表数据的方法
-const getList = () => {
-    //打开加载状态
-    loading.value = true
-    //调用api接口查询购物车列表数据
-    listCart(queryParams.value).then(res => {
-        //将数据总数赋值给total
-        total.value = res.total
-        //将查询到的列表数据赋值给cartList
-        cartList.value = res.rows
-        //关闭加载状态
-        loading.value = false
-    })
+const checkout = () => {
+  if (selectedItems.value.length === 0) {
+    ElMessage.warning('请先选择要结算的产品')
+    return
+  }
+  cartStore.setCheckoutItems(selectedItems.value)
+  router.push('/index/checkout')
 }
 
-//组件加载时自动获取购物策划列表
+const handleSelectionChange = selection => {
+  selectedItems.value = selection
+}
+
+const handleQuantityChange = item => {
+  updateCart({
+    cartId: item.cartId,
+    quantity: item.quantity
+  })
+}
+
+const removeItem = cartId => {
+  ElMessageBox.confirm('确认删除该商品吗?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    delCart(cartId).then(() => {
+      getList()
+      ElMessage({ type: 'success', message: '删除成功' })
+    })
+  }).catch(() => {
+    ElMessage({ type: 'info', message: '取消删除' })
+  })
+}
+
+const totalAmount = computed(() => {
+  return selectedItems.value.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0)
+})
+
+const getList = () => {
+  loading.value = true
+  listCart(queryParams.value).then(res => {
+    total.value = res.total
+    cartList.value = res.rows
+  }).finally(() => {
+    loading.value = false
+  })
+}
+
 onMounted(() => {
-    getList()
+  getList()
 })
 </script>
 
 <style scoped>
-/* 购物车容器样式 */
-.cart-container {
-    max-width: 1450px; /* 最大宽度 */
-    margin: 0 auto; /* 水平居中 */
-    padding: 20px; /* 内边距 */
+.cart-page {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
 }
 
-/* 购物车主体样式 */
+.cart-hero,
 .cart-main {
-    background-color: #fff; /* 白色背景 */
-    padding: 20px; /* 内边距 */
-    border-radius: 8px; /* 圆角 */
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  border: 1px solid rgba(101, 150, 84, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 42px rgba(28, 69, 41, 0.08);
 }
 
-/* 购物车头部样式 */
+.cart-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+  padding: 28px 30px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top left, rgba(84, 156, 95, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(249, 253, 248, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.hero-kicker {
+  margin: 0 0 8px;
+  color: #2f8850;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hero-title {
+  margin: 0 0 10px;
+  color: #1e3c2a;
+  font-size: 34px;
+}
+
+.hero-description {
+  margin: 0;
+  max-width: 720px;
+  color: #647a6d;
+  line-height: 1.9;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 14px;
+}
+
+.stat-card {
+  min-width: 132px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(106, 155, 88, 0.14);
+}
+
+.stat-card span {
+  display: block;
+  color: #778c80;
+  font-size: 12px;
+}
+
+.stat-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #254633;
+  font-size: 21px;
+}
+
+.cart-main {
+  padding: 22px;
+  border-radius: 26px;
+}
+
 .cart-header {
-    display: flex; /* 弹性布局 */
-    justify-content: space-between; /* 两端对齐 */
-    align-items: center; /* 垂直居中 */
-    padding-bottom: 15px; /* 底部内边距 */
-    border-bottom: 1px solid #eee; /* 底部边框 */
-    margin-bottom: 20px; /* 底部外边距 */
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
-/* 购物车标题样式 */
 .cart-header h2 {
-    margin: 0; /* 清除默认外边距 */
-    font-size: 22px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
+  margin: 0 0 6px;
+  color: #1f3e2b;
+  font-size: 28px;
 }
 
-/* 购物车提示信息样式 */
-.cart-tips {
-    display: flex; /* 弹性布局 */
-    align-items: center; /* 垂直居中 */
-}
-
-/* 购物车提示文字样式 */
+.cart-header p,
 .cart-tips span {
-    margin-right: 20px; /* 右侧外边距 */
-    font-size: 14px; /* 字体大小 */
-    color: #666; /* 字体颜色 */
+  margin: 0;
+  color: #6c8074;
+  font-size: 14px;
 }
 
-/* 购物车为空时的样式 */
 .cart-empty {
-    padding: 50px 0; /* 上下内边距 */
-    text-align: center; /* 文字居中 */
+  padding: 50px 0;
 }
 
-/* 购物车商品列表样式 */
-.cart-items {
-    margin-bottom: 30px; /* 底部外边距 */
+.empty-state-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px dashed rgba(105, 152, 86, 0.24);
+  background: rgba(248, 252, 247, 0.74);
 }
 
-/* 商品信息单元格样式 */
+.empty-state-text strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #264432;
+  font-size: 18px;
+}
+
+.empty-state-text p {
+  margin: 0;
+  color: #6f8177;
+  line-height: 1.8;
+}
+
 .product-info-cell {
-    display: flex; /* 弹性布局 */
-    align-items: center; /* 垂直居中 */
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
-/* 商品图片样式 */
 .product-image {
-    width: 80px; /* 宽度 */
-    height: 80px; /* 高度 */
-    object-fit: cover; /* 图片填充方式 */
-    margin-right: 15px; /* 右侧外边距 */
-    border-radius: 4px; /* 圆角 */
+  width: 82px;
+  height: 82px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 10px 22px rgba(29, 72, 44, 0.08);
 }
 
-/* 商品详情样式 */
-.product-details {
-    flex: 1; /* 占据剩余空间 */
-}
-
-/* 商品名称样式 */
 .product-name {
-    font-size: 14px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
-    margin-bottom: 5px; /* 底部外边距 */
-    display: -webkit-box; /* 设置显示方式 */
-    -webkit-line-clamp: 2; /* 限制显示行数 */
-    -webkit-box-orient: vertical; /* 垂直方向 */
-    overflow: hidden; /* 溢出隐藏 */
+  margin-bottom: 8px;
+  color: #213a2a;
+  font-weight: 700;
+  font-size: 15px;
 }
 
-/* 商品来源信息样式 */
 .product-origin {
-    font-size: 12px; /* 字体大小 */
-    color: #666; /* 字体颜色 */
+  color: #73867b;
+  font-size: 13px;
+  line-height: 1.8;
 }
 
-/* 商品价格样式 */
-.product-price {
-    font-size: 16px; /* 字体大小 */
-    color: #f56c6c; /* 红色 */
-    font-weight: bold; /* 加粗 */
-}
-
-/* 商品小计样式 */
+.product-price,
 .product-subtotal {
-    font-size: 16px; /* 字体大小 */
-    color: #f56c6c; /* 红色 */
-    font-weight: bold; /* 加粗 */
+  font-size: 16px;
+  font-weight: 700;
 }
 
-/* 购物车底部样式 */
+.product-price {
+  color: #365442;
+}
+
+.product-subtotal {
+  color: #eb5d3f;
+}
+
 .cart-footer {
-    display: flex; /* 弹性布局 */
-    justify-content: space-between; /* 两端对齐 */
-    align-items: center; /* 垂直居中 */
-    padding: 15px 20px; /* 内边距 */
-    background-color: #f9f9f9; /* 浅灰色背景 */
-    border-radius: 4px; /* 圆角 */
-    margin-bottom: 30px; /* 底部外边距 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f8fbf7, #ffffff);
+  border: 1px solid #e7eee8;
 }
 
-/* 底部左侧区域样式 */
-.footer-left {
-    display: flex; /* 弹性布局 */
-    align-items: center; /* 垂直居中 */
+.total-label {
+  color: #788b81;
+  font-size: 13px;
 }
 
-/* 底部右侧区域样式 */
-.footer-right {
-    display: flex; /* 弹性布局 */
-    align-items: center; /* 垂直居中 */
+.amount {
+  color: #eb5d3f;
+  font-size: 28px;
+  font-weight: 800;
 }
 
-/* 合计信息样式 */
-.total-info {
-    margin-right: 30px; /* 右侧外边距 */
-    text-align: right; /* 文字右对齐 */
+:deep(.cart-items .el-table) {
+  border-radius: 18px;
+  overflow: hidden;
 }
 
-/* 合计金额样式 */
-.total-amount {
-    font-size: 18px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
-    margin-bottom: 5px; /* 底部外边距 */
+:deep(.cart-items .el-table th.el-table__cell) {
+  background: #f7faf7;
+  color: #5e7668;
+  font-weight: 700;
 }
 
-/* 金额数字样式 */
-.total-amount .amount {
-    color: #f56c6c; /* 红色 */
-    font-weight: bold; /* 加粗 */
+:deep(.cart-items .el-input-number) {
+  width: 130px;
 }
 
-/* 响应式设计 - 小于992px时的样式 */
 @media (max-width: 992px) {
-    .cart-footer {
-        flex-direction: column; /* 垂直排列 */
-        align-items: flex-start; /* 左对齐 */
-    }
+  .cart-hero,
+  .cart-header,
+  .cart-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-    .footer-right {
-        width: 100%; /* 全宽 */
-        justify-content: space-between; /* 两端对齐 */
-        margin-top: 15px; /* 顶部外边距 */
-    }
+  .hero-stats {
+    width: 100%;
+  }
 }
 
-/* 响应式设计 - 小于768px时的样式 */
 @media (max-width: 768px) {
-    /* 商品信息单元格改为垂直排列 */
-    .product-info-cell {
-        flex-direction: column; /* 垂直排列 */
-        align-items: flex-start; /* 左对齐 */
-    }
+  .cart-page {
+    padding: 16px 14px 34px;
+  }
 
-    /* 调整商品图片间距 */
-    .product-image {
-        margin-right: 0; /* 清除右侧外边距 */
-        margin-bottom: 10px; /* 底部外边距 */
-    }
+  .cart-hero,
+  .cart-main {
+    border-radius: 20px;
+  }
+
+  .hero-title {
+    font-size: 28px;
+  }
+
+  .hero-stats {
+    flex-direction: column;
+  }
 }
 </style>

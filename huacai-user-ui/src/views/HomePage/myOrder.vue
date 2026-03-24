@@ -33,9 +33,17 @@
 
     <section class="order-list-card" v-loading="loading">
       <div v-if="total === 0" class="empty-order">
-        <el-empty description="暂无订单">
-          <el-button type="primary" @click="router.push('/index/products')">去逛逛</el-button>
-        </el-empty>
+        <div class="empty-state-card">
+          <el-empty description="暂无订单">
+            <template #description>
+              <div class="empty-state-text">
+                <strong>你还没有产生订单</strong>
+                <p>可以先去浏览产品并完成加入购物车、下单与支付流程。</p>
+              </div>
+            </template>
+            <el-button type="primary" @click="router.push('/index/products')">去逛逛</el-button>
+          </el-empty>
+        </div>
       </div>
 
       <div v-else class="order-list">
@@ -392,6 +400,26 @@ onMounted(() => {
 
 .empty-order {
   padding: 50px 0;
+}
+
+.empty-state-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px dashed rgba(102, 151, 83, 0.24);
+  background: rgba(248, 252, 247, 0.74);
+}
+
+.empty-state-text strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #264432;
+  font-size: 18px;
+}
+
+.empty-state-text p {
+  margin: 0;
+  color: #6f8177;
+  line-height: 1.8;
 }
 
 .order-list {
