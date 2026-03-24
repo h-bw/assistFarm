@@ -35,9 +35,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join sys_user u on p.user_id = u.user_id
         <where>
             <if test="name != null  and name != ''"> and p.name like concat('%', #{name}, '%')</if>
+            <if test="origin != null  and origin != ''"> and p.origin = #{origin}</if>
+            <if test="minPrice != null"> and p.price &gt;= #{minPrice}</if>
+            <if test="maxPrice != null"> and p.price &lt;= #{maxPrice}</if>
             <if test="userId != null "> and p.user_id = #{userId}</if>
             <if test="userName != null  and userName != ''"> and u.user_name like concat('%', #{userName}, '%')</if>
         </where>
+        order by p.create_time desc
     </select>
 
     <select id="selectProductsByProductsId" parameterType="String" resultMap="ProductsResult">

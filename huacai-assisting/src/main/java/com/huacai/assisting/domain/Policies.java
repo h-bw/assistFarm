@@ -61,5 +61,9 @@ public class Policies extends BaseEntity
     @Excel(name = "联系地址")
     private String address;
 
+    /** 政策来源链接 */
+    @Excel(name = "政策来源链接")
+    private String sourceLink;
+
 
 }

@@ -42,6 +42,12 @@ public class Products extends BaseEntity
     @Excel(name = "产地")
     private String origin;
 
+    /** 最低价格（查询用） */
+    private BigDecimal minPrice;
+
+    /** 最高价格（查询用） */
+    private BigDecimal maxPrice;
+
     /** 发货地 */
     @Excel(name = "发货地")
     private String shipFrom;

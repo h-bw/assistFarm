@@ -1,0 +1,6 @@
+time="2026-03-20T20:50:57+08:00" level=info msg="Reading configuration file C:\\Users\\Administrator/.cpolar/cpolar.yml"
+time="2026-03-20T20:50:57+08:00" level=error msg="Errorf SplitHostPort:address false: missing port in address"
+time="2026-03-20T20:50:57+08:00" level=info msg="I'm Starting!"
+time="2026-03-20T20:50:57+08:00" level=info msg="Running in terminal."
+time="2026-03-20T20:50:57+08:00" level=info msg="I'm running windows-service."
+time="2026-03-20T20:50:57+08:00" level=debug msg="启动Worker子进程"

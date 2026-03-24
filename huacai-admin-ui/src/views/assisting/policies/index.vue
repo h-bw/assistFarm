@@ -191,6 +191,9 @@
                 <el-form-item label="联系地址" prop="address">
                     <el-input v-model="form.address" placeholder="请输入联系地址"/>
                 </el-form-item>
+                <el-form-item label="政策来源" prop="sourceLink">
+                    <el-input v-model="form.sourceLink" placeholder="请输入政策来源链接"/>
+                </el-form-item>
             </el-form>
             <template #footer>
                 <div class="dialog-footer">
@@ -329,6 +332,7 @@ const reset = () => {
         contactPerson: null,
         phone: null,
         address: null,
+        sourceLink: null,
         createTime: null
     }
     proxy.resetForm("policiesRef")

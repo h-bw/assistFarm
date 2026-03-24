@@ -1,0 +1,26 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName SimSun
+
+actor "用户" as User
+participant "订单页面" as Page
+participant "服务器" as Server
+participant "支付宝沙箱" as Alipay
+
+User -> Page : 1. 浏览商品并提交订单
+Page -> Server : 2. 请求提交订单接口
+Server --> Page : 3. 返回订单结果
+
+User -> Page : 4. 点击去支付
+Page -> Server : 5. 请求支付接口
+Server --> Page : 6. 返回支付表单
+Page -> Alipay : 7. 跳转支付宝收银台
+
+Alipay -> Server : 8. 异步支付通知
+Server -> Server : 9. 更新订单状态
+
+Page -> Server : 10. 查询订单状态
+Server --> Page : 11. 返回最新订单信息
+Page --> User : 12. 显示支付结果
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName SimSun
+
+start
+:普通用户注册/登录;
+:提交农户入驻申请;
+:上传认证资料;
+:系统保存申请信息;
+:管理员审核资料;
+
+if (是否审核通过?) then (是)
+  :农户认证成功;
+  :发布商品;
+  :商品上架销售;
+else (否)
+  :返回修改资料;
+endif
+
+stop
+@enduml

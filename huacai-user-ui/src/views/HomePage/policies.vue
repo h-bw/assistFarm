@@ -1,486 +1,873 @@
 <template>
-  <!-- 政策页面容器 -->
-    <div class="policies-container">
-        <!-- 政策导航和内容区域 -->
-        <div class="policies-content">
-            <!-- 政策分类导航 -->
-            <div class="policies-nav">
-                <!-- 导航头部 -->
-                <div class="nav-header">
-                    <h2>助农政策</h2>
-                    <p>了解帮扶政策, 助力乡村振兴</p>
-                </div>
-                <el-menu
-                        :default-active="queryParams.category"
-                        class="policies-menu"
-                        @select="handleCategorySelect"
-                        background-color="#f0f9eb"
-                        text-color="#2c8a3e"
-                        active-text-color="#ffffff"
-                >
-                    <!-- 渲染菜单项 -->
-                    <el-menu-item
-                            v-for="item in policies_category"
-                            :key="item.value"
-                            :index="item.value"
-                    >
-                        <el-icon><Position/></el-icon>
-                        <span>{{ item.label }}</span>
-                    </el-menu-item>
+  <div class="policies-page">
+    <section class="hero-section">
+      <div class="hero-copy">
+        <span class="hero-badge">助农信息服务</span>
+        <h1>助农政策查询与申报参考</h1>
+        <p>
+          汇集补贴、营销、培训、金融等方向的助农政策信息，
+          帮助用户快速了解政策重点、适用地区和申报联系渠道。
+        </p>
+        <div class="hero-search">
+          <el-input
+            v-model="queryParams.title"
+            clearable
+            placeholder="搜索政策标题、关键词"
+            @keyup.enter="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          <el-button type="success" @click="handleSearch">搜索政策</el-button>
+          <el-button @click="handleReset">重置</el-button>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span class="stat-label">当前结果</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">政策分类</span>
+          <strong>{{ categoryCount }}</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">涉及地区</span>
+          <strong>{{ regionCount }}</strong>
+        </div>
+      </div>
+    </section>
 
-                </el-menu>
-            </div>
-
-
-            <!-- 政策内容区域 -->
-            <div class="policies-main">
-                <!-- 政策列表 -->
-                <div class="policies-list" v-loading="loading">
-                    <!-- 空状态提示 -->
-                    <div v-if="policiesList.length === 0" class="empty-policies">
-                        <el-empty description="暂无相关政策"/>
-                    </div>
-
-                    <div v-else>
-                        <!-- 政策数据循环渲染 -->
-                        <div class="policies-item" v-for="policies in policiesList" :key="policies.policiesId">
-                            <!-- 政策头部 -->
-                            <div class="policies-item-header">
-                                <!-- 分类标签 -->
-                                <dict-tag :options="policies_category" :value="policies.category"/>
-                                <!-- 标题 -->
-                                <h3 @click="showDetail(policies)">{{ policies.title }}</h3>
-                            </div>
-                            <!-- 政策信息 -->
-                            <div class="policies-item-meta">
-                                <span class="meta-item">
-                                    <el-icon><Calendar/></el-icon>
-                                    发布时间: {{ policies.createTime }}
-                                </span>
-                                <span class="meta-item">
-                                    <el-icon><Location/></el-icon>
-                                    适用地区: {{ policies.region }}
-                                </span>
-                                <span class="meta-item">
-                                    <el-icon><OfficeBuilding/></el-icon>
-                                    发布单位: {{ policies.publisher }}
-                                </span>
-                            </div>
-                            <!-- 政策摘要 -->
-                            <div class="policies-item-content">
-                                {{ policies.summary }}
-                            </div>
-                        </div>
-
-                        <!-- 分页组件 -->
-                        <div class="policies-pagination">
-                            <pagination
-                                    v-show="total>0"
-                                    :total="total"
-                                    v-model:page="queryParams.pageNum"
-                                    v-model:limit="queryParams.pageSize"
-                                    @pagination="getList"
-                                    :pageSizes="[5,10,15,20]"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <section class="policies-layout">
+      <aside class="policies-sidebar">
+        <div class="side-card">
+          <div class="side-card-header">
+            <h3>政策分类</h3>
+            <span>{{ activeCategoryLabel }}</span>
+          </div>
+          <div class="category-list">
+            <button
+              v-for="item in categoryOptions"
+              :key="item.value || 'all'"
+              class="category-item"
+              :class="{ active: queryParams.category === item.value }"
+              @click="handleCategorySelect(item.value)"
+            >
+              {{ item.label }}
+            </button>
+          </div>
         </div>
 
-        <!-- 政策详情对话框 -->
-        <vxe-modal height="90vh" title="政策详情" v-model="open" width="70%" show-maximize showFooter resize>
-            <!-- 详情内容 -->
-            <div>
-                <!-- 详情头部 -->
-                <div class="detail-header">
-                    <div class="detail-meta">
-                        <dict-tag :options="policies_category" :value="currentPolicy.category"/>
-                        <span class="meta-item">
-                                    <el-icon><Calendar/></el-icon>
-                                    发布时间: {{ currentPolicy.createTime }}
-                                </span>
-                        <span class="meta-item">
-                                    <el-icon><Location/></el-icon>
-                                    适用地区: {{ currentPolicy.region }}
-                                </span>
-                        <span class="meta-item">
-                                    <el-icon><OfficeBuilding/></el-icon>
-                                    发布单位: {{ currentPolicy.publisher }}
-                                </span>
-                    </div>
-                </div>
-
-                <!-- 政策内容 -->
-                <div class="detail-content" v-html="currentPolicy.content"/>
-
-                <!-- 联系方式 -->
-                <div class="detail-contacts">
-                    <h4>联系方式</h4>
-                    <div class="contact-list">
-                        <div class="contact-item">
-                            <p>负责部门: {{ currentPolicy.department }}</p>
-                            <p>联系人: {{ currentPolicy.contactPerson }}</p>
-                            <p>电话: {{ currentPolicy.phone }}</p>
-                            <p>地址: {{ currentPolicy.address }}</p>
-                        </div>
-                    </div>
-                </div>
+        <div class="side-card guide-card">
+          <div class="side-card-header">
+            <h3>申报提示</h3>
+          </div>
+          <div class="guide-list">
+            <div class="guide-item">
+              <span class="guide-index">01</span>
+              <div>
+                <h4>先看适用地区</h4>
+                <p>优先确认政策对应的省、市、区县和实施对象。</p>
+              </div>
             </div>
+            <div class="guide-item">
+              <span class="guide-index">02</span>
+              <div>
+                <h4>再看申报条件</h4>
+                <p>重点查看主体资格、规模要求、时间节点和材料清单。</p>
+              </div>
+            </div>
+            <div class="guide-item">
+              <span class="guide-index">03</span>
+              <div>
+                <h4>最后联系主管部门</h4>
+                <p>政策页面已整理部门、联系人和电话，便于演示展示。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
 
-            <!-- 对话框底部 -->
-            <template #footer>
-                <div class="dialog-footer">
-                    <el-button @click="open = false">关闭</el-button>
-                </div>
-            </template>
-        </vxe-modal>
+      <main class="policies-main">
+        <div v-if="featuredPolicy" class="featured-policy">
+          <div class="featured-top">
+            <div>
+              <span class="featured-kicker">重点推荐</span>
+              <h2>{{ featuredPolicy.title }}</h2>
+            </div>
+            <el-button type="success" plain @click="showDetail(featuredPolicy)">查看详情</el-button>
+          </div>
+          <p class="featured-summary">{{ featuredPolicy.summary }}</p>
+          <div class="featured-meta">
+            <span>
+              <el-icon><Calendar /></el-icon>
+              {{ featuredPolicy.createTime }}
+            </span>
+            <span>
+              <el-icon><Location /></el-icon>
+              {{ featuredPolicy.region }}
+            </span>
+            <span>
+              <el-icon><OfficeBuilding /></el-icon>
+              {{ featuredPolicy.publisher }}
+            </span>
+          </div>
+        </div>
 
-    </div>
+        <div class="list-toolbar">
+          <div>
+            <h3>{{ activeCategoryLabel }}</h3>
+            <p>为你整理适合助农商城展示的政策摘要与申报信息</p>
+          </div>
+          <span class="toolbar-count">共 {{ total }} 条</span>
+        </div>
+
+        <div class="policies-grid" v-loading="loading">
+          <template v-if="policyCards.length > 0">
+            <article
+              v-for="policy in policyCards"
+              :key="policy.policiesId"
+              class="policy-card"
+            >
+              <div class="policy-card-top">
+                <dict-tag :options="policies_category" :value="policy.category" />
+                <span class="region-tag">{{ policy.region }}</span>
+              </div>
+              <h3 @click="showDetail(policy)">{{ policy.title }}</h3>
+              <p class="policy-summary">{{ policy.summary }}</p>
+              <div class="policy-meta">
+                <span>
+                  <el-icon><OfficeBuilding /></el-icon>
+                  {{ policy.publisher }}
+                </span>
+                <span>
+                  <el-icon><Calendar /></el-icon>
+                  {{ policy.createTime }}
+                </span>
+              </div>
+              <div class="policy-actions">
+                <el-button text type="success" @click="showDetail(policy)">查看详情</el-button>
+              </div>
+            </article>
+          </template>
+
+          <div v-else-if="!featuredPolicy" class="empty-policies">
+            <el-empty description="暂无相关政策内容" />
+          </div>
+        </div>
+
+        <div class="policies-pagination">
+          <pagination
+            v-show="total > 0"
+            :total="total"
+            v-model:page="queryParams.pageNum"
+            v-model:limit="queryParams.pageSize"
+            :pageSizes="[4, 6, 8, 10]"
+            @pagination="getList"
+          />
+        </div>
+      </main>
+    </section>
+
+    <vxe-modal
+      v-model="open"
+      :title="currentPolicy.title || '政策详情'"
+      width="74%"
+      height="90vh"
+      show-maximize
+      showFooter
+      resize
+    >
+      <div class="detail-shell">
+        <div class="detail-banner">
+          <dict-tag :options="policies_category" :value="currentPolicy.category" />
+          <h2>{{ currentPolicy.title }}</h2>
+          <p>{{ currentPolicy.summary }}</p>
+          <div class="detail-meta-grid">
+            <div class="meta-card">
+              <span>发布时间</span>
+              <strong>{{ currentPolicy.createTime || '待补充' }}</strong>
+            </div>
+            <div class="meta-card">
+              <span>适用地区</span>
+              <strong>{{ currentPolicy.region || '待补充' }}</strong>
+            </div>
+            <div class="meta-card">
+              <span>发布单位</span>
+              <strong>{{ currentPolicy.publisher || '待补充' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-content-wrap">
+          <div class="detail-content" v-html="currentPolicy.content || '<p>暂无政策正文内容</p>'"></div>
+
+          <aside class="detail-side">
+            <div class="detail-side-card">
+              <h4>联系方式</h4>
+              <p><strong>负责部门：</strong>{{ currentPolicy.department || '待补充' }}</p>
+              <p><strong>联系人：</strong>{{ currentPolicy.contactPerson || '待补充' }}</p>
+              <p><strong>电话：</strong>{{ currentPolicy.phone || '待补充' }}</p>
+              <p><strong>地址：</strong>{{ currentPolicy.address || '待补充' }}</p>
+            </div>
+            <div v-if="currentPolicy.sourceLink" class="detail-side-card source-card">
+              <h4>政策来源</h4>
+              <p>可跳转查看官方公开信息页面，便于答辩展示时说明内容来源。</p>
+              <el-link :href="currentPolicy.sourceLink" target="_blank" type="success" :underline="false">
+                查看政策原文
+              </el-link>
+            </div>
+            <div class="detail-side-card tips-card">
+              <h4>阅读建议</h4>
+              <p>优先关注申报对象、补贴额度、申报流程和时限要求。</p>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="open = false">关闭</el-button>
+        </div>
+      </template>
+    </vxe-modal>
+  </div>
 </template>
 
 <script setup>
-import {listPolicies} from "@/api/assisting/policies.js";
-import {Calendar, Location, OfficeBuilding, Position} from "@element-plus/icons-vue";
+import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { Calendar, Location, OfficeBuilding, Search } from '@element-plus/icons-vue'
+import { listPolicies } from '@/api/assisting/policies.js'
 
-const {proxy} = getCurrentInstance()
-const {policies_category} = proxy.useDict('policies_category')
+const route = useRoute()
+const { proxy } = getCurrentInstance()
+const { policies_category } = proxy.useDict('policies_category')
 
-//是否打开详情弹窗
 const open = ref(false)
-
-//当前查看的政策
 const currentPolicy = ref({})
-
-//打开政策详情
-const showDetail = (policies) => {
-    currentPolicy.value = policies
-    open.value = true
-}
-
-//处理分类选择
-const handleCategorySelect = (value) => {
-    queryParams.value.category = value
-    getList()
-}
-
-//查询参数
-const queryParams = ref({
-    pageNum: 1,
-    pageSize: 5,
-    title: null,
-    category: '金融支持', //默认选中的分类
-})
-
-//加载状态
 const loading = ref(false)
-
-//数据总数
 const total = ref(0)
-
-// 政策列表数据
 const policiesList = ref([])
 
-//获取政策列表数据
+const queryParams = ref({
+  pageNum: 1,
+  pageSize: 6,
+  title: '',
+  category: ''
+})
+
+const categoryOptions = computed(() => [
+  { label: '全部政策', value: '' },
+  ...(policies_category.value || [])
+])
+
+const activeCategoryLabel = computed(() => {
+  return categoryOptions.value.find(item => item.value === queryParams.value.category)?.label || '全部政策'
+})
+
+const featuredPolicy = computed(() => policiesList.value[0] || null)
+const policyCards = computed(() => (featuredPolicy.value ? policiesList.value.slice(1) : []))
+const categoryCount = computed(() => Math.max(categoryOptions.value.length - 1, 0))
+const regionCount = computed(() => new Set(policiesList.value.map(item => item.region).filter(Boolean)).size)
+
+const initQueryFromRoute = () => {
+  queryParams.value.title = route.query.title || ''
+  queryParams.value.category = route.query.category || ''
+  queryParams.value.pageNum = 1
+}
+
 const getList = () => {
-    //打开加载状态
-    loading.value = true
-    listPolicies(queryParams.value).then(res => {
-        policiesList.value = res.rows
-        total.value = res.total
-        //关闭加载状态
-        loading.value = false
+  loading.value = true
+  listPolicies(queryParams.value)
+    .then(res => {
+      policiesList.value = res.rows || []
+      total.value = res.total || 0
+    })
+    .finally(() => {
+      loading.value = false
     })
 }
 
-//组件挂载时获取数据
-onMounted(() => {
+const showDetail = policy => {
+  currentPolicy.value = policy
+  open.value = true
+}
+
+const handleCategorySelect = value => {
+  queryParams.value.category = value
+  queryParams.value.pageNum = 1
+  getList()
+}
+
+const handleSearch = () => {
+  queryParams.value.pageNum = 1
+  getList()
+}
+
+const handleReset = () => {
+  queryParams.value = {
+    pageNum: 1,
+    pageSize: 6,
+    title: '',
+    category: ''
+  }
+  getList()
+}
+
+watch(
+  () => route.query,
+  () => {
+    initQueryFromRoute()
     getList()
+  }
+)
+
+onMounted(() => {
+  initQueryFromRoute()
+  getList()
 })
 </script>
 
 <style scoped>
-/* 政策页面容器样式 */
-.policies-container {
-    min-height: 100vh; /* 最小高度为视口高度 */
-    background-color: #f5f7fa; /* 浅灰色背景 */
-    padding: 20px 0; /* 上下内边距 */
+.policies-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(71, 146, 88, 0.08), transparent 30%),
+    linear-gradient(180deg, #f6fbf4 0%, #f7f8fa 45%, #ffffff 100%);
+  padding: 28px 0 36px;
 }
 
-/* 政策内容区域样式 */
-.policies-content {
-    display: flex; /* 弹性布局 */
-    max-width: 1450px; /* 最大宽度 */
-    margin: 0 auto; /* 水平居中 */
-    background-color: #fff; /* 白色背景 */
-    border-radius: 8px; /* 圆角 */
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影效果 */
-    overflow: hidden; /* 溢出隐藏 */
+.hero-section,
+.policies-layout {
+  max-width: 1450px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 20px;
 }
 
-/* 政策导航样式 */
-.policies-nav {
-    width: 220px; /* 固定宽度 */
-    background-color: #329860; /* 绿色背景 */
-    border-right: 1px solid #539b2e; /* 右侧边框 */
-    padding: 20px 0; /* 上下内边距 */
+.hero-section {
+  display: grid;
+  grid-template-columns: 1.6fr 0.9fr;
+  gap: 22px;
+  margin-bottom: 24px;
 }
 
-/* 导航头部样式 */
-.nav-header {
-    padding: 0 20px 20px; /* 内边距 */
-    border-bottom: 1px solid #e1f3d8; /* 底部边框 */
-    margin-bottom: 10px; /* 底部外边距 */
+.hero-copy,
+.hero-stats,
+.side-card,
+.featured-policy,
+.policy-card,
+.list-toolbar {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(92, 150, 104, 0.14);
+  box-shadow: 0 16px 50px rgba(32, 74, 44, 0.08);
+  border-radius: 24px;
 }
 
-.nav-header h2 {
-    font-size: 20px; /* 字体大小 */
-    color: #fcfcfc; /* 字体颜色 */
-    margin: 0 0 5px 0; /* 外边距 */
+.hero-copy {
+  padding: 32px;
 }
 
-.nav-header p {
-    font-size: 12px; /* 字体大小 */
-    color: #ffffff; /* 字体颜色 */
-    margin: 0; /* 外边距清零 */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(48, 140, 82, 0.1);
+  color: #2f7f49;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
 }
 
-/* 菜单样式 */
-.policies-menu {
-    border-right: none; /* 去除右侧边框 */
+.hero-copy h1 {
+  margin: 0 0 12px;
+  font-size: 38px;
+  line-height: 1.2;
+  color: #183824;
 }
 
-/* 深度选择器修改Element UI组件内部样式 */
-.policies-menu :deep(.el-menu-item) {
-    height: 48px; /* 菜单项高度 */
-    line-height: 48px; /* 行高 */
-    margin: 5px 0; /* 上下外边距 */
-    transition: all 0.3s; /* 过渡效果 */
+.hero-copy p {
+  margin: 0;
+  color: #567161;
+  line-height: 1.8;
+  max-width: 720px;
 }
 
-/* 激活状态菜单项样式 */
-.policies-menu :deep(.el-menu-item.is-active) {
-    background-color: #2c8a3e !important; /* 深绿色背景 */
-    color: #ffffff !important; /* 白色文字 */
-    font-weight: bold; /* 粗体 */
+.hero-search {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  margin-top: 24px;
 }
 
-/* 菜单项悬停效果 */
-.policies-menu :deep(.el-menu-item:hover) {
-    background-color: #96e171 !important; /* 浅绿色背景 */
+.hero-stats {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
 }
 
-/* 菜单图标样式 */
-.policies-menu :deep(.el-menu-item .el-icon) {
-    color: inherit; /* 继承文字颜色 */
+.stat-card {
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, #f2fbf2 100%);
+  border: 1px solid rgba(54, 131, 72, 0.1);
 }
 
-/* 主要内容区域样式 */
+.stat-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 28px;
+  color: #234e33;
+}
+
+.stat-label {
+  color: #6a8375;
+  font-size: 13px;
+}
+
+.policies-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 22px;
+}
+
+.policies-sidebar {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  position: sticky;
+  top: 118px;
+  height: fit-content;
+}
+
+.side-card {
+  padding: 20px;
+}
+
+.side-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.side-card-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #254b35;
+}
+
+.side-card-header span {
+  font-size: 12px;
+  color: #7b9285;
+}
+
+.category-list {
+  display: grid;
+  gap: 10px;
+}
+
+.category-item {
+  width: 100%;
+  border: 1px solid rgba(56, 131, 75, 0.14);
+  background: #f7fbf7;
+  color: #355846;
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.category-item:hover,
+.category-item.active {
+  background: linear-gradient(135deg, #3d9c60 0%, #2d7f47 100%);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.guide-list {
+  display: grid;
+  gap: 14px;
+}
+
+.guide-item {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.guide-index {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #eff8ef;
+  color: #34804a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.guide-item h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: #2a4735;
+}
+
+.guide-item p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #6a8175;
+}
+
 .policies-main {
-    flex: 1; /* 占据剩余空间 */
-    padding: 20px; /* 内边距 */
+  display: grid;
+  gap: 18px;
 }
 
-/* 政策列表样式 */
-.policies-list {
-    min-height: 500px; /* 最小高度 */
+.featured-policy {
+  padding: 24px 26px;
+  background: linear-gradient(135deg, rgba(241, 251, 242, 0.95) 0%, rgba(255, 255, 255, 0.96) 100%);
+  position: relative;
+  overflow: hidden;
 }
 
-/* 空状态样式 */
+.featured-policy::after {
+  content: "";
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(80, 166, 99, 0.16), transparent 68%);
+}
+
+.featured-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.featured-kicker {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: #2f8450;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.featured-top h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.35;
+  color: #173524;
+}
+
+.featured-summary {
+  margin: 16px 0;
+  line-height: 1.9;
+  color: #4b6758;
+}
+
+.featured-meta,
+.policy-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: #6a8478;
+  font-size: 13px;
+}
+
+.featured-meta span,
+.policy-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.list-toolbar {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-toolbar h3 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  color: #1f3f2b;
+}
+
+.list-toolbar p {
+  margin: 0;
+  color: #6b8476;
+  font-size: 14px;
+}
+
+.toolbar-count {
+  font-size: 14px;
+  color: #628274;
+}
+
+.policies-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  min-height: 260px;
+}
+
+.policy-card {
+  padding: 22px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.policy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 55px rgba(35, 68, 45, 0.12);
+}
+
+.policy-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #5aa36e, #d4b15a);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.policy-card:hover::before {
+  opacity: 1;
+}
+
+.policy-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.region-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f4f7f5;
+  font-size: 12px;
+  color: #688478;
+}
+
+.policy-card h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  line-height: 1.45;
+  color: #183724;
+  cursor: pointer;
+}
+
+.policy-card h3:hover {
+  color: #2f8850;
+}
+
+.policy-summary {
+  margin: 0 0 18px;
+  color: #5a7365;
+  line-height: 1.9;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.policy-actions {
+  margin-top: 16px;
+}
+
 .empty-policies {
-    padding: 100px 0; /* 上下内边距 */
-    text-align: center; /* 文本居中 */
+  grid-column: 1 / -1;
+  padding: 60px 0;
 }
 
-/* 政策项样式 */
-.policies-item {
-    padding: 20px; /* 内边距 */
-    border-bottom: 1px solid #eee; /* 底部边框 */
-    transition: all 0.3s; /* 过渡效果 */
-}
-
-/* 政策项悬停效果 */
-.policies-item:hover {
-    background-color: #f9f9f9; /* 浅灰色背景 */
-}
-
-/* 政策项头部样式 */
-.policies-item-header {
-    display: flex; /* 弹性布局 */
-    align-items: center; /* 垂直居中 */
-    margin-bottom: 10px; /* 底部外边距 */
-}
-
-.policies-item-header h3 {
-    margin: 0 0 0 10px; /* 外边距 */
-    font-size: 18px; /* 字体大小 */
-    cursor: pointer; /* 手型光标 */
-    transition: color 0.3s; /* 颜色过渡效果 */
-}
-
-/* 标题悬停效果 */
-.policies-item-header h3:hover {
-    color: #2c8a3e; /* 绿色文字 */
-}
-
-/* 元信息样式 */
-.policies-item-meta {
-    display: flex; /* 弹性布局 */
-    flex-wrap: wrap; /* 允许换行 */
-    gap: 15px; /* 项间距 */
-    margin-bottom: 15px; /* 底部外边距 */
-    font-size: 12px; /* 字体大小 */
-    color: #666; /* 文字颜色 */
-}
-
-/* 单个元信息项样式 */
-.meta-item {
-    display: flex; /* 弹性布局 */
-    align-items: center; /* 垂直居中 */
-}
-
-.meta-item .el-icon {
-    margin-right: 5px; /* 图标右侧间距 */
-}
-
-/* 政策内容摘要样式 */
-.policies-item-content {
-    margin-bottom: 15px; /* 底部外边距 */
-    line-height: 1.6; /* 行高 */
-    color: #333; /* 文字颜色 */
-    display: -webkit-box; /* 弹性盒子 */
-    -webkit-line-clamp: 3; /* 限制3行 */
-    -webkit-box-orient: vertical; /* 垂直方向 */
-    overflow: hidden; /* 溢出隐藏 */
-}
-
-/* 分页样式 */
 .policies-pagination {
-    margin-top: 30px; /* 顶部外边距 */
-    text-align: center; /* 文本居中 */
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 16px;
 }
 
-/* 详情对话框样式 */
-.detail-header {
-    margin-bottom: 20px; /* 底部外边距 */
-    padding-bottom: 15px; /* 底部内边距 */
-    border-bottom: 1px solid #eee; /* 底部边框 */
+.detail-shell {
+  padding: 10px 8px 20px;
 }
 
-/* 详情元信息样式 */
-.detail-meta {
-    display: flex; /* 弹性布局 */
-    flex-wrap: wrap; /* 允许换行 */
-    align-items: center; /* 垂直居中 */
-    gap: 15px; /* 项间距 */
-    font-size: 14px; /* 字体大小 */
-    color: #666; /* 文字颜色 */
+.detail-banner {
+  padding: 8px 10px 24px;
+  border-bottom: 1px solid #edf2ec;
 }
 
-.detail-meta .el-icon {
-    margin-right: 5px; /* 图标右侧间距 */
+.detail-banner h2 {
+  margin: 12px 0 10px;
+  font-size: 28px;
+  line-height: 1.4;
+  color: #163522;
 }
 
-/* 详情内容样式 */
+.detail-banner p {
+  margin: 0 0 18px;
+  color: #587064;
+  line-height: 1.9;
+}
+
+.detail-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.meta-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f7faf7;
+  border: 1px solid rgba(72, 129, 86, 0.12);
+}
+
+.meta-card span {
+  display: block;
+  color: #789082;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.meta-card strong {
+  color: #284534;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.detail-content-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  margin-top: 24px;
+}
+
 .detail-content {
-    margin-bottom: 30px; /* 底部外边距 */
+  min-width: 0;
 }
 
-/* 详情内容标题样式 */
-.detail-content h4 {
-    font-size: 16px; /* 字体大小 */
-    color: #2c8a3e; /* 绿色文字 */
-    margin: 20px 0 10px; /* 外边距 */
-    padding-bottom: 5px; /* 底部内边距 */
-    border-bottom: 1px solid #eee; /* 底部边框 */
+.detail-content :deep(h3),
+.detail-content :deep(h4) {
+  color: #2f8350;
+  margin: 20px 0 10px;
 }
 
-/* 段落和列表样式 */
-.detail-content p,
-.detail-content ol,
-.detail-content ul {
-    margin: 10px 0; /* 上下外边距 */
-    line-height: 1.8; /* 行高 */
+.detail-content :deep(p),
+.detail-content :deep(li) {
+  color: #3f5148;
+  line-height: 1.9;
 }
 
-.detail-content li {
-    margin: 5px 0; /* 上下外边距 */
+.detail-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
 }
 
-/* 联系方式区域样式 */
-.detail-contacts {
-    margin-top: 30px; /* 顶部外边距 */
-    padding-top: 20px; /* 顶部内边距 */
-    border-top: 1px solid #eee; /* 顶部边框 */
+.detail-content :deep(th),
+.detail-content :deep(td) {
+  border: 1px solid #e6ece6;
+  padding: 10px 12px;
 }
 
-/* 标题样式 */
-.detail-attachments h4,
-.detail-contacts h4 {
-    font-size: 16px; /* 字体大小 */
-    color: #2c8a3e; /* 绿色文字 */
-    margin-bottom: 15px; /* 底部外边距 */
+.detail-side {
+  display: grid;
+  gap: 16px;
+  align-content: start;
 }
 
-/* 联系列表样式 */
-.contact-list {
-    display: grid; /* 网格布局 */
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* 自适应列 */
-    gap: 20px; /* 间隙 */
+.detail-side-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: #f8fbf7;
+  border: 1px solid rgba(72, 129, 86, 0.12);
+  box-shadow: 0 10px 24px rgba(30, 73, 46, 0.04);
 }
 
-/* 联系项样式 */
-.contact-item {
-    padding: 15px; /* 内边距 */
-    background-color: #f9f9f9; /* 浅灰色背景 */
-    border-radius: 4px; /* 圆角 */
+.detail-side-card h4 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #2b4936;
 }
 
-.contact-item p {
-    margin: 5px 0; /* 上下外边距 */
-    font-size: 14px; /* 字体大小 */
+.detail-side-card p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #60786c;
+  line-height: 1.7;
 }
 
-/* 对话框底部样式 */
+.source-card :deep(.el-link) {
+  margin-top: 6px;
+  font-weight: 600;
+}
+
 .dialog-footer {
-    text-align: center; /* 文本居中 */
+  text-align: center;
 }
 
-/* 响应式设计 - 中等屏幕 */
-@media (max-width: 992px) {
-    .policies-content {
-        flex-direction: column; /* 垂直排列 */
-    }
+@media (max-width: 1200px) {
+  .hero-section,
+  .policies-layout,
+  .detail-content-wrap {
+    grid-template-columns: 1fr;
+  }
 
-    .policies-nav {
-        width: 100%; /* 全宽 */
-        border-right: none; /* 去除右侧边框 */
-        border-bottom: 1px solid #eee; /* 底部边框 */
-    }
+  .policies-sidebar {
+    position: static;
+  }
 
-    .policies-menu {
-        display: flex; /* 弹性布局 */
-        flex-wrap: wrap; /* 允许换行 */
-        justify-content: center; /* 水平居中 */
-    }
-
-    .policies-menu :deep(.el-menu-item) {
-        height: 40px; /* 高度调整 */
-        line-height: 40px; /* 行高调整 */
-        padding: 0 15px; /* 左右内边距 */
-    }
+  .policies-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* 响应式设计 - 小屏幕 */
 @media (max-width: 768px) {
-    .policies-item-meta {
-        flex-direction: column; /* 垂直排列 */
-        gap: 8px; /* 间隙调整 */
-        align-items: flex-start; /* 左对齐 */
-    }
+  .hero-copy,
+  .hero-stats,
+  .side-card,
+  .featured-policy,
+  .policy-card,
+  .list-toolbar {
+    border-radius: 18px;
+  }
 
-    .contact-list {
-        grid-template-columns: 1fr; /* 单列布局 */
-    }
+  .hero-copy h1 {
+    font-size: 28px;
+  }
+
+  .hero-search {
+    grid-template-columns: 1fr;
+  }
+
+  .featured-top,
+  .list-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-meta-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
