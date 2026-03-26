@@ -46,13 +46,26 @@
         <div class="quantity-panel">
           <span class="quantity-label">购买数量</span>
           <div class="quantity-control">
-            <el-input-number v-model="quantity" :min="1" :max="999" size="large" />
+            <el-input-number
+              v-model="quantity"
+              :min="1"
+              :max="Number(product.inventory || 0) > 0 ? Number(product.inventory) : 999"
+              size="large"
+              :disabled="Number(product.inventory || 0) <= 0"
+            />
             <span class="inventory-tip">库存充足时可直接加入购物车或立即下单</span>
           </div>
         </div>
 
         <div class="product-actions">
-          <el-button type="primary" size="large" class="primary-action" @click="addToCart" v-loading="loading">
+          <el-button
+            type="primary"
+            size="large"
+            class="primary-action"
+            @click="addToCart"
+            v-loading="loading"
+            :disabled="Number(product.inventory || 0) <= 0"
+          >
             <el-icon><ShoppingCart /></el-icon>
             加入购物车
           </el-button>
@@ -115,7 +128,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, ShoppingCart } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -131,6 +144,11 @@ const quantity = ref(1)
 const loading = ref(false)
 
 const addToCart = () => {
+  const inventory = Number(product.value.inventory || 0)
+  if (inventory <= 0) {
+    ElMessage.warning('该商品库存不足')
+    return
+  }
   loading.value = true
   const item = {
     productsId: route.params.id,
@@ -143,11 +161,33 @@ const addToCart = () => {
   })
 }
 
-onMounted(() => {
-  getProducts(route.params.id).then(res => {
-    product.value = res.data || {}
-  })
+const fetchProduct = async () => {
+  const res = await getProducts(route.params.id)
+  product.value = res.data || {}
+
+  // 若库存变更导致购买数量超出上限，则自动回退到库存可购买范围
+  const inventory = Number(product.value.inventory || 0)
+  if (inventory > 0 && quantity.value > inventory) {
+    quantity.value = inventory
+  }
+}
+
+// keep-alive 场景：重新激活页面时也需要刷新库存
+onActivated(() => {
+  fetchProduct()
 })
+
+onMounted(() => {
+  fetchProduct()
+})
+
+// 同一组件切换不同 productsId 时刷新
+watch(
+  () => route.params.id,
+  () => {
+    fetchProduct()
+  }
+)
 </script>
 
 <style scoped>

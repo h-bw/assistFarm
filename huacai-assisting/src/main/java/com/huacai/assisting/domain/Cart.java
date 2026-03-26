@@ -44,6 +44,9 @@ public class Cart extends BaseEntity
     /** 价格 */
     private BigDecimal price;
 
+    /** 剩余库存（用于前端展示与数量校验） */
+    private BigDecimal inventory;
+
     /** 图片 */
     private String image;
 

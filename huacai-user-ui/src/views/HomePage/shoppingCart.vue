@@ -70,10 +70,17 @@
               <el-input-number
                 v-model="row.quantity"
                 :min="1"
-                :max="999"
+                :max="Number(row.inventory || 0) > 0 ? Number(row.inventory) : 999"
                 size="large"
                 @change="handleQuantityChange(row)"
+                :disabled="Number(row.inventory || 0) <= 0"
               />
+            </template>
+          </el-table-column>
+
+          <el-table-column label="剩余库存" width="140" align="center">
+            <template #default="{ row }">
+              <span>{{ Number(row.inventory || 0) }} 件</span>
             </template>
           </el-table-column>
 
@@ -170,6 +177,13 @@ const handleSelectionChange = selection => {
 }
 
 const handleQuantityChange = item => {
+  const inventory = Number(item.inventory || 0)
+  // 若库存不足，限制最大购买数量，避免提交后出现“已支付但库存为负”
+  if (inventory > 0 && Number(item.quantity) > inventory) {
+    item.quantity = inventory
+    ElMessage.warning(`库存不足，已自动调整数量为 ${inventory}`)
+    return
+  }
   updateCart({
     cartId: item.cartId,
     quantity: item.quantity

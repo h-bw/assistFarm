@@ -13,6 +13,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="specs"    column="specs"    />
         <result property="origin"    column="origin"    />
         <result property="price"    column="price"    />
+        <result property="inventory"    column="inventory"    />
         <result property="image"    column="image"    />
         <result property="productsUserId"    column="productsUserId"    />
         <result property="productsName"    column="productsName"    />
@@ -27,6 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectCartList" parameterType="Cart" resultMap="CartResult">
         select c.cart_id, c.products_id, c.quantity, c.user_id, c.create_time,
                p.specs, p.origin, p.price, p.image,
+               p.inventory as inventory,
                p.user_id as productsUserId, -- 产品所属农户用户ID
                p.name as productsName, -- 产品名称
                u.user_name as createUserName, -- 创建人用户名
