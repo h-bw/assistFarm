@@ -333,8 +333,32 @@ const confirmPayment = () => {
     return
   }
   const orderId = orderIdList.value[0]
-  // ✅ 使用真实后端地址，不使用 /dev-api 代理前缀
-  window.location.href = `${backendUrl}/api/pay/${orderId}`
+  // 使用 fetch 获取后端返回的支付宝跳转表单，并在当前用户点击事件内执行 submit
+  // 目的：避免某些浏览器对“页面加载后自动提交”的限制导致无法进入支付宝沙盒
+  const payUrl = `${backendUrl}/api/pay/${orderId}`
+  fetch(payUrl, { method: 'GET', credentials: 'omit' })
+    .then(async res => {
+      if (!res.ok) throw new Error(`支付接口请求失败：${res.status}`)
+      return res.text()
+    })
+    .then(html => {
+      const container = document.createElement('div')
+      container.innerHTML = html
+      // 移除脚本，防止重复提交或受浏览器策略影响
+      container.querySelectorAll('script').forEach(s => s.remove())
+      const form = container.querySelector('form')
+      if (!form) throw new Error('支付表单解析失败')
+      document.body.appendChild(form)
+      form.submit()
+      // 兜底：若浏览器阻止 form.submit 导致没有触发跳转
+      // 则回退到整页跳转，确保能进入支付宝沙盒
+      setTimeout(() => {
+        window.location.href = payUrl
+      }, 2000)
+    })
+    .catch(err => {
+      ElMessage.error('支付跳转失败：' + (err?.message || err))
+    })
 }
 
 onMounted(() => {
