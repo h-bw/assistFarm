@@ -1,0 +1,63 @@
+助农扶贫商城推荐算法总结记录
+
+项目：assistFarm
+日期：2026-03-26
+
+一、算法总体概述
+本系统当前采用“场景化 + 协同过滤 + 业务重排 + 可解释输出”的推荐方案。
+推荐基础算法为基于商品的协同过滤（Item-based Collaborative Filtering），即根据用户历史商品或购物车商品，寻找相似商品并进行排序推荐。
+在基础协同过滤之上，系统结合助农商城业务特征，对同产地商品、同农户商品进行额外加权，使推荐结果不仅相似，而且更符合平台业务定位。
+
+二、核心推荐逻辑
+1. 相似商品召回：系统基于商品相似度表，为用户历史行为商品或购物车商品召回相似商品集合。
+2. 分数计算：推荐分数不再是简单命中次数累计，而是采用“相似度分数 × 最近行为权重”的方式进行计算。用户最近接触过的商品，在推荐中具有更高权重。
+3. 业务重排：若候选商品与用户已购买商品存在同产地或同农户关系，则在原始推荐分数基础上进行加权。
+4. 热门补足：当个性化推荐结果不足时，系统自动补充平台热销商品，保证推荐位始终有内容可展示。
+5. 已购过滤：推荐时会排除用户已经购买过或购物车中已存在的商品，避免重复推荐。
+
+三、当前已实现的三类推荐场景
+1. 默认推荐（default）：用于商品页“猜你喜欢”，根据用户历史订单进行个性化推荐。
+2. 再次购买推荐（buy_again）：用于订单页“再次购买推荐”，重点参考用户历史订单频次、购买数量和最近购买时间，适合复购场景。
+3. 搭配购买推荐（cross_sell）：用于购物车页“搭配购买推荐”，根据购物车商品召回相似或可搭配商品，适合联动推荐场景。
+
+四、可解释推荐机制
+本系统已支持推荐理由输出，即推荐接口除了返回商品外，还会返回简短的推荐原因，用于前端直接展示。
+当前推荐理由示例包括：
+1. 与你近期购买商品相似度较高
+2. 优先展示同产地助农商品
+3. 来自你偏好的助农农户
+4. 你曾多次购买过这类商品
+5. 与你购物车中的商品搭配度较高
+该设计使推荐系统具备一定的可解释性，更适合毕业设计答辩展示。
+
+五、与传统单一推荐方式相比的改进
+与原先“命中一次加1”式的简单推荐相比，当前方案有以下提升：
+1. 推荐结果更符合用户近期兴趣，而不是平均历史兴趣。
+2. 推荐结果更符合助农商城的业务特征，突出产地和农户关联。
+3. 推荐被拆分为不同页面场景使用，而不是所有页面共用同一种推荐逻辑。
+4. 推荐结果支持理由展示，增强了系统可解释性与展示效果。
+
+六、当前实现文件
+后端核心文件：
+1. huacai-assisting/src/main/java/com/huacai/assisting/service/RecommendationService.java
+2. huacai-assisting/src/main/java/com/huacai/assisting/controller/RecommendationController.java
+3. huacai-assisting/src/main/java/com/huacai/assisting/vo/RecommendItemVo.java
+4. huacai-assisting/src/main/resources/mapper/assisting/OrdersMapper.xml
+5. huacai-assisting/src/main/resources/mapper/assisting/ItemSimilarityMapper.xml
+6. huacai-assisting/src/main/resources/mapper/assisting/ProductsMapper.xml
+
+前端核心文件：
+1. huacai-user-ui/src/components/Recommend/index.vue
+2. huacai-user-ui/src/api/assisting/recommend.js
+3. huacai-user-ui/src/views/HomePage/products.vue
+4. huacai-user-ui/src/views/HomePage/shoppingCart.vue
+5. huacai-user-ui/src/views/HomePage/myOrder.vue
+
+七、答辩可用总结表述
+本系统采用基于商品的协同过滤算法作为推荐基础，在此之上结合最近行为权重、热门补全机制以及助农商城中的产地和农户业务特征进行重排，形成了面向商品浏览、购物车搭配和历史复购三类场景的可解释推荐系统。
+该推荐系统不仅能够提升推荐准确性，还能够通过推荐理由向用户解释为什么推荐该商品，从而增强系统的可展示性与可理解性。
+
+八、当前风险与后续可优化方向
+1. 当前再次购买推荐仍属于规则增强型复购推荐，未来可继续引入更精细的时间序列复购模型。
+2. 当前搭配购买推荐主要基于相似商品和业务重排，后续可以进一步加入“常一起下单”的共购统计。
+3. 当前系统使用的是推荐结果解释文案，后续可以扩展为更细粒度的推荐理由类型与展示标签。

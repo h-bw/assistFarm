@@ -4,9 +4,6 @@
       <div>
         <p class="hero-kicker">购物车</p>
         <h1 class="hero-title">整理待结算商品并快速进入订单流程</h1>
-        <p class="hero-description">
-          购物车用于集中展示已选择商品，支持数量调整、删除和勾选结算，方便完整演示商城交易闭环。
-        </p>
       </div>
       <div class="hero-stats">
         <div class="stat-card">
@@ -24,7 +21,6 @@
       <div class="cart-header">
         <div>
           <h2>我的购物车</h2>
-          <p>支持批量勾选、数量调整和一键结算</p>
         </div>
         <div class="cart-tips">
           <span>共 {{ total }} 件产品</span>
@@ -37,7 +33,7 @@
             <template #description>
               <div class="empty-state-text">
                 <strong>购物车里还没有商品</strong>
-                <p>去商品页挑选几件助农产品，加入购物车后就能继续演示结算流程。</p>
+                <p>去商品页挑选几件助农产品，加入购物车后即可继续结算。</p>
               </div>
             </template>
             <el-button type="primary" @click="router.push('/index/products')">去逛逛</el-button>
@@ -117,6 +113,16 @@
         </div>
       </div>
     </section>
+
+    <Recommend
+      :userId="loginUser.id"
+      :topN="4"
+      scene="cross_sell"
+      :product-ids="cartProductIds"
+      title="搭配购买推荐"
+      kicker="购物车联动"
+      description="根据当前购物车中的商品，为你补充相似产地、相近偏好或更适合一起购买的助农产品。"
+    />
   </div>
 </template>
 
@@ -128,6 +134,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { delCart, listCart, updateCart } from '@/api/assisting/cart.js'
 import useUserStore from '@/store/modules/user.js'
 import { useCartStore } from '@/store/modules/cart.js'
+import Recommend from '@/components/Recommend/index.vue'
 
 const router = useRouter()
 const baseUrl = import.meta.env.VITE_APP_BASE_API
@@ -188,6 +195,8 @@ const totalAmount = computed(() => {
   return selectedItems.value.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0)
 })
 
+const cartProductIds = computed(() => cartList.value.map(item => item.productsId).filter(Boolean))
+
 const getList = () => {
   loading.value = true
   listCart(queryParams.value).then(res => {
@@ -244,13 +253,6 @@ onMounted(() => {
   font-size: 34px;
 }
 
-.hero-description {
-  margin: 0;
-  max-width: 720px;
-  color: #647a6d;
-  line-height: 1.9;
-}
-
 .hero-stats {
   display: flex;
   gap: 14px;
@@ -296,7 +298,6 @@ onMounted(() => {
   font-size: 28px;
 }
 
-.cart-header p,
 .cart-tips span {
   margin: 0;
   color: #6c8074;

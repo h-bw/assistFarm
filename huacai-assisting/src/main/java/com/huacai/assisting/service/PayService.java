@@ -10,4 +10,6 @@ public interface PayService {
 
     /** 处理支付宝异步回调 */
     String handleNotify(HttpServletRequest request) throws Exception;
+
+    String queryAndUpdate(String orderId) throws Exception;
 }

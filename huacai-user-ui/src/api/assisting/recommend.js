@@ -1,20 +1,35 @@
-// src/api/assisting/recommend.js
 import request from '@/utils/request'
 
-// 获取用户个性化推荐商品ID列表
-export function getRecommendations(userId, topN = 6) {
-    return request({
-        url: '/assisting/recommend/user/' + userId,
-        method: 'get',
-        params: { topN }
-    })
+export function getRecommendations(userId, topN = 6, options = {}) {
+  const params = { topN }
+
+  if (options.scene) {
+    params.scene = options.scene
+  }
+
+  if (Array.isArray(options.productIds) && options.productIds.length > 0) {
+    params.productIds = options.productIds.join(',')
+  }
+
+  return request({
+    url: '/assisting/recommend/user/' + userId,
+    method: 'get',
+    params
+  })
 }
 
-// 根据商品ID列表批量查询商品详情
 export function getProductListByIds(ids) {
-    return request({
-        url: '/assisting/products/listByIds',
-        method: 'post',
-        data: ids
-    })
+  return request({
+    url: '/assisting/products/listByIds',
+    method: 'post',
+    data: ids
+  })
+}
+
+export function mergeRecommendationProducts(items = [], products = []) {
+  const reasonMap = new Map(items.map(item => [item.productsId, item.reason]))
+  return (products || []).map(product => ({
+    ...product,
+    recommendReason: reasonMap.get(product.productsId) || ''
+  }))
 }

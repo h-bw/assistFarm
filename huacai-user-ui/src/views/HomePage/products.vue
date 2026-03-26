@@ -1,12 +1,18 @@
 <template>
   <div class="products-container">
-    <Recommend :userId="userId" :topN="6" />
+    <Recommend
+      :userId="userId"
+      :topN="6"
+      scene="default"
+      title="猜你喜欢"
+      kicker="个性推荐"
+      description="结合你的购买偏好、相似商品关系和助农业务特征，优先展示更可能感兴趣的农产品。"
+    />
 
     <section class="filter-section">
       <div class="filter-copy">
         <p class="filter-kicker">商品筛选</p>
-        <h2>按关键词、产地和价格快速筛选</h2>
-        <p>让商品列表更像真实商城，既能展示助农属性，也能帮助老师快速看到平台的实用性。</p>
+        <h2>筛选助农产品</h2>
       </div>
 
       <el-row :gutter="18" class="filter-form">
@@ -307,12 +313,6 @@ onMounted(() => {
   margin: 0 0 10px;
   font-size: 30px;
   color: #1f3f2b;
-}
-
-.filter-copy p {
-  margin: 0;
-  color: #678073;
-  line-height: 1.8;
 }
 
 .filter-form {

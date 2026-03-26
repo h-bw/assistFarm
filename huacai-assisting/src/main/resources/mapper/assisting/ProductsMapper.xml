@@ -124,5 +124,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <foreach collection="list" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+        ORDER BY FIELD(products_id,
+        <foreach collection="list" item="id" separator=",">
+            #{id}
+        </foreach>
+        )
     </select>
 </mapper>

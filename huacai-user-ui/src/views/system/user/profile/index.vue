@@ -4,9 +4,6 @@
       <div>
         <p class="hero-kicker">个人中心</p>
         <h1 class="hero-title">维护账号资料与安全信息</h1>
-        <p class="hero-description">
-          这里可以查看当前账号信息、上传头像、修改基本资料以及更新登录密码，作为商城用户中心的核心页面。
-        </p>
       </div>
       <div class="hero-badge">
         <span>账号状态</span>
@@ -27,7 +24,7 @@
           </div>
           <ul class="list-group list-group-striped">
             <li class="list-group-item">
-              <svg-icon icon-class="user" />用户名称
+              <svg-icon icon-class="user" />用户名
               <div class="pull-right">{{ state.user.userName }}</div>
             </li>
             <li class="list-group-item">
@@ -130,13 +127,6 @@ getUser()
   margin: 0 0 10px;
   color: #1e3d2b;
   font-size: 34px;
-}
-
-.hero-description {
-  margin: 0;
-  max-width: 720px;
-  color: #647a6d;
-  line-height: 1.9;
 }
 
 .hero-badge {

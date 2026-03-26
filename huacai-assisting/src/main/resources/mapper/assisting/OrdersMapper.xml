@@ -5,19 +5,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.huacai.assisting.mapper.OrdersMapper">
 
     <resultMap type="Orders" id="OrdersResult">
-        <result property="ordersId"    column="orders_id"    />
-        <result property="productsUserId"    column="products_user_id"    />
-        <result property="createTime"    column="create_time"    />
-        <result property="shippingTime"    column="shipping_time"    />
-        <result property="completeTime"    column="complete_time"    />
-        <result property="totalPrice"    column="total_price"    />
-        <result property="name"    column="name"    />
-        <result property="phone"    column="phone"    />
-        <result property="address"    column="address"    />
-        <result property="status"    column="status"    />
-        <result property="userId"    column="user_id"    />
-        <result property="userName"    column="user_name"    />
-        <result property="farmersName"    column="farmersName"    />
+        <result property="ordersId" column="orders_id" />
+        <result property="productsUserId" column="products_user_id" />
+        <result property="createTime" column="create_time" />
+        <result property="shippingTime" column="shipping_time" />
+        <result property="completeTime" column="complete_time" />
+        <result property="totalPrice" column="total_price" />
+        <result property="name" column="name" />
+        <result property="phone" column="phone" />
+        <result property="address" column="address" />
+        <result property="status" column="status" />
+        <result property="userId" column="user_id" />
+        <result property="userName" column="user_name" />
+        <result property="farmersName" column="farmersName" />
     </resultMap>
 
     <resultMap id="OrdersOrdersProductsResult" type="Orders" extends="OrdersResult">
@@ -25,33 +25,37 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="OrdersProducts" id="OrdersProductsResult">
-        <result property="opId"    column="op_id"    />
-        <result property="ordersId"    column="orders_id"    />
-        <result property="productsId"    column="products_id"    />
-        <result property="productsName"    column="products_name"    />
-        <result property="image"    column="image"    />
-        <result property="specs"    column="specs"    />
-        <result property="origin"    column="origin"    />
-        <result property="price"    column="price"    />
-        <result property="quantity"    column="quantity"    />
+        <result property="opId" column="op_id" />
+        <result property="ordersId" column="orders_id" />
+        <result property="productsId" column="products_id" />
+        <result property="productsName" column="products_name" />
+        <result property="image" column="image" />
+        <result property="specs" column="specs" />
+        <result property="origin" column="origin" />
+        <result property="price" column="price" />
+        <result property="quantity" column="quantity" />
     </resultMap>
 
     <sql id="selectOrdersVo">
         select orders_id, products_user_id, create_time, shipping_time, complete_time, total_price, name, phone, address, status, user_id from orders
     </sql>
 
+    <sql id="validRecommendationOrderStatus">
+        o.status in ('待发货', '待收货', '已完成')
+    </sql>
+
     <select id="selectOrdersList" parameterType="Orders" resultMap="OrdersResult">
         select o.orders_id, o.products_user_id, o.create_time, o.shipping_time, o.complete_time,
                o.total_price, o.name, o.phone, o.address, o.status, o.user_id,
-               u.user_name, -- 下单用户
-               (select real_name from farmers where user_id = o.products_user_id) as farmersName -- 农户名称
+               u.user_name,
+               (select real_name from farmers where user_id = o.products_user_id) as farmersName
         from orders o
         left join sys_user u on o.user_id = u.user_id
         <where>
-            <if test="ordersId != null  and ordersId != ''"> and o.orders_id = #{ordersId}</if>
-            <if test="productsUserId != null  and productsUserId != ''"> and o.products_user_id = #{productsUserId}</if>
-            <if test="status != null  and status != ''"> and o.status = #{status}</if>
-            <if test="userId != null "> and o.user_id = #{userId}</if>
+            <if test="ordersId != null and ordersId != ''">and o.orders_id = #{ordersId}</if>
+            <if test="productsUserId != null and productsUserId != ''">and o.products_user_id = #{productsUserId}</if>
+            <if test="status != null and status != ''">and o.status = #{status}</if>
+            <if test="userId != null">and o.user_id = #{userId}</if>
         </where>
         order by o.create_time desc
     </select>
@@ -82,7 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="address != null and address != ''">address,</if>
             <if test="status != null and status != ''">status,</if>
             <if test="userId != null">user_id,</if>
-         </trim>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="ordersId != null">#{ordersId},</if>
             <if test="productsUserId != null and productsUserId != ''">#{productsUserId},</if>
@@ -95,7 +99,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="address != null and address != ''">#{address},</if>
             <if test="status != null and status != ''">#{status},</if>
             <if test="userId != null">#{userId},</if>
-         </trim>
+        </trim>
     </insert>
 
     <update id="updateOrders" parameterType="Orders">
@@ -138,37 +142,59 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <insert id="batchOrdersProducts">
-        insert into orders_products( op_id, orders_id, products_id, products_name, image, specs, origin, price, quantity) values
+        insert into orders_products(op_id, orders_id, products_id, products_name, image, specs, origin, price, quantity) values
         <foreach item="item" index="index" collection="list" separator=",">
-            ( #{item.opId}, #{item.ordersId}, #{item.productsId}, #{item.productsName}, #{item.image}, #{item.specs}, #{item.origin}, #{item.price}, #{item.quantity})
+            (#{item.opId}, #{item.ordersId}, #{item.productsId}, #{item.productsName}, #{item.image}, #{item.specs}, #{item.origin}, #{item.price}, #{item.quantity})
         </foreach>
     </insert>
-    <!-- 获取用户-商品交互（按订单状态过滤） -->
+
     <select id="selectUserProductInteractions" resultType="map">
         SELECT o.user_id, op.products_id, SUM(op.quantity) AS interaction
         FROM orders_products op
-                 JOIN orders o ON op.orders_id = o.orders_id
-        WHERE o.status = #{status}
+        JOIN orders o ON op.orders_id = o.orders_id
+        <where>
+            <if test="status != null and status != ''">
+                o.status = #{status}
+            </if>
+            <if test="status == null or status == ''">
+                <include refid="validRecommendationOrderStatus" />
+            </if>
+        </where>
         GROUP BY o.user_id, op.products_id
     </select>
 
-    <!-- 获取用户最近购买的商品ID（按订单时间倒序，去重） -->
     <select id="selectRecentProductIdsByUserId" resultType="string">
         SELECT op.products_id
         FROM orders_products op
         JOIN orders o ON op.orders_id = o.orders_id
-        WHERE o.user_id = #{userId} AND o.status IN ('已完成', '待收货', '待发货')
+        WHERE o.user_id = #{userId}
+          AND <include refid="validRecommendationOrderStatus" />
         GROUP BY op.products_id
         ORDER BY MAX(o.create_time) DESC
-            LIMIT #{limit}
+        LIMIT #{limit}
     </select>
 
-    <!-- 获取热门商品（按总销量降序） -->
     <select id="selectHotProductIds" resultType="string">
-        SELECT products_id
-        FROM orders_products
-        GROUP BY products_id
-        ORDER BY SUM(quantity) DESC
-            LIMIT #{limit}
+        SELECT op.products_id
+        FROM orders_products op
+        JOIN orders o ON op.orders_id = o.orders_id
+        WHERE <include refid="validRecommendationOrderStatus" />
+        GROUP BY op.products_id
+        ORDER BY SUM(op.quantity) DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectRepurchaseCandidatesByUserId" resultType="map">
+        SELECT op.products_id,
+               COUNT(DISTINCT o.orders_id) AS order_count,
+               SUM(op.quantity) AS total_quantity,
+               MAX(o.create_time) AS last_purchase_time
+        FROM orders_products op
+        JOIN orders o ON op.orders_id = o.orders_id
+        WHERE o.user_id = #{userId}
+          AND <include refid="validRecommendationOrderStatus" />
+        GROUP BY op.products_id
+        ORDER BY order_count DESC, total_quantity DESC, last_purchase_time DESC
+        LIMIT #{limit}
     </select>
 </mapper>

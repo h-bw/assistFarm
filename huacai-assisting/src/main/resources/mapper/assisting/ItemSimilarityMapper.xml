@@ -4,12 +4,10 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.huacai.assisting.mapper.ItemSimilarityMapper">
 
-    <!-- 清空表（使用 DELETE 便于事务管理） -->
     <delete id="truncateTable">
         DELETE FROM item_similarity
     </delete>
 
-    <!-- 批量插入 -->
     <insert id="batchInsert" parameterType="list">
         INSERT INTO item_similarity (item_id_a, item_id_b, similarity) VALUES
         <foreach collection="list" item="item" separator=",">
@@ -17,13 +15,20 @@
         </foreach>
     </insert>
 
-    <!-- 查询与某商品最相似的N个商品 -->
     <select id="selectTopSimilar" resultType="string">
         SELECT item_id_b
         FROM item_similarity
         WHERE item_id_a = #{itemId}
         ORDER BY similarity DESC
-            LIMIT #{limit}
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectTopSimilarWithScores" resultType="map">
+        SELECT item_id_b, similarity
+        FROM item_similarity
+        WHERE item_id_a = #{itemId}
+        ORDER BY similarity DESC
+        LIMIT #{limit}
     </select>
 
 </mapper>

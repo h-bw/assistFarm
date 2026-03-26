@@ -111,14 +111,14 @@
       <div class="payment-container">
 
         <div class="order-info">
-          <el-result icon="success" title="订单提交成功" sub-title="请尽快完成支付">
+          <el-result icon="success" title="订单提交成功" sub-title="请完成支付以便商家尽快处理订单">
             <template #extra>
               <div class="order-details">
-                <p>订单号：{{ orderIdList.map(item => item.msg).join('、') }}</p>
+                <p>订单号：{{ orderIdList.join('、') }}</p>
                 <p>总应付金额：<span class="amount">¥{{ totalAllOrdersAmount.toFixed(2) }}</span></p>
                 <el-alert
                     v-if="orderIdList.length > 1"
-                    :title="`共 ${orderIdList.length} 个订单，点击支付后将跳转支付宝支付第一个订单，其余订单请在【我的订单】中逐个支付`"
+                    :title="`当前共生成 ${orderIdList.length} 个订单，本次将先支付第一个订单，其余订单可在“我的订单”中继续支付。`"
                     type="warning"
                     :closable="false"
                     style="margin-top: 12px; text-align: left"
@@ -263,6 +263,22 @@ const groupItemsByFarmers = (items) => {
   return Object.values(farmerMap)
 }
 
+const extractOrderId = (result) => {
+  if (!result) {
+    return null
+  }
+  if (typeof result === 'string') {
+    return result
+  }
+  if (typeof result.data === 'string' && result.data.trim()) {
+    return result.data
+  }
+  if (typeof result.msg === 'string' && result.msg.trim() && result.msg !== '操作成功') {
+    return result.msg
+  }
+  return null
+}
+
 // 提交订单
 const submitOrder = () => {
   if (!selectedAddressId.value) {
@@ -287,7 +303,11 @@ const submitOrder = () => {
         })
       })
 
-      orderIdList.value = await Promise.all(createOrderPromises)
+      const createResults = await Promise.all(createOrderPromises)
+      orderIdList.value = createResults.map(extractOrderId).filter(Boolean)
+      if (orderIdList.value.length !== createResults.length) {
+        throw new Error('订单号生成失败，请稍后重试')
+      }
 
       // 清理购物车中已结算的产品
       const cartsId = checkoutItems.value.map(item => item.cartId)
@@ -312,7 +332,7 @@ const confirmPayment = () => {
     ElMessage.error('订单信息异常，请重新下单')
     return
   }
-  const orderId = orderIdList.value[0].msg
+  const orderId = orderIdList.value[0]
   // ✅ 使用真实后端地址，不使用 /dev-api 代理前缀
   window.location.href = `${backendUrl}/api/pay/${orderId}`
 }

@@ -1,11 +1,15 @@
 package com.huacai.assisting.controller;
 
 import com.huacai.assisting.service.RecommendationService;
+import com.huacai.assisting.vo.RecommendItemVo;
 import com.huacai.common.core.domain.AjaxResult;
+import com.huacai.common.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 商品推荐控制器
@@ -13,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/assisting/recommend")
 public class RecommendationController {
+    private static final int MAX_SEED_PRODUCT_IDS = 20;
 
     @Autowired
     private RecommendationService recommendationService;
@@ -25,9 +30,28 @@ public class RecommendationController {
      */
     @GetMapping("/user/{userId}")
     public AjaxResult getUserRecommendations(@PathVariable Long userId,
-                                             @RequestParam(defaultValue = "10") Integer topN) {
-        List<String> productIds = recommendationService.recommendForUser(userId, topN);
-        return AjaxResult.success(productIds);
+                                             @RequestParam(defaultValue = "10") Integer topN,
+                                             @RequestParam(required = false) String scene,
+                                             @RequestParam(required = false) String productIds) {
+        Long loginUserId = SecurityUtils.getUserId();
+        if (!SecurityUtils.isAdmin(loginUserId) && !loginUserId.equals(userId)) {
+            return AjaxResult.error("无权查看其他用户的推荐结果");
+        }
+        List<String> seedProductIds = parseProductIds(productIds);
+        List<RecommendItemVo> recommendationItems = recommendationService.recommendForScene(userId, topN, scene, seedProductIds);
+        return AjaxResult.success(recommendationItems);
+    }
+
+    private List<String> parseProductIds(String productIds) {
+        if (productIds == null || productIds.isBlank()) {
+            return java.util.Collections.emptyList();
+        }
+        return Arrays.stream(productIds.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .distinct()
+                .limit(MAX_SEED_PRODUCT_IDS)
+                .collect(Collectors.toList());
     }
 
     /**

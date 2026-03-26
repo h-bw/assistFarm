@@ -29,13 +29,13 @@
             <groupId>com.huacai</groupId>
             <artifactId>huacai-system</artifactId>
         </dependency>
+        
+        <!-- 支付宝 SDK -->
+        <dependency>
+            <groupId>com.alipay.sdk</groupId>
+            <artifactId>alipay-sdk-java</artifactId>
+            <version>4.38.0.ALL</version>
+        </dependency>
     </dependencies>
-
-    <!-- 支付宝 SDK -->
-    <dependency>
-        <groupId>com.alipay.sdk</groupId>
-        <artifactId>alipay-sdk-java</artifactId>
-        <version>4.38.0.ALL</version>
-    </dependency>
 
 </project>

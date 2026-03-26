@@ -111,4 +111,12 @@ public interface OrdersMapper
      */
     List<String> selectHotProductIds(@Param("limit") int limit);
 
+    /**
+     * 获取用户的复购候选商品及统计信息
+     * @param userId 用户ID
+     * @param limit 限制数量
+     * @return 包含 products_id、order_count、total_quantity、last_purchase_time 的 Map 列表
+     */
+    List<Map<String, Object>> selectRepurchaseCandidatesByUserId(@Param("userId") Long userId, @Param("limit") int limit);
+
 }

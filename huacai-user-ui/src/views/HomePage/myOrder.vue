@@ -4,9 +4,6 @@
       <div>
         <p class="hero-kicker">订单中心</p>
         <h1 class="hero-title">查看订单进度与支付状态</h1>
-        <p class="hero-description">
-          这里集中展示待付款、待收货和已完成订单，便于演示商城从下单到支付、收货的完整流程。
-        </p>
       </div>
       <div class="hero-summary">
         <div class="summary-pill">
@@ -104,6 +101,15 @@
       </div>
     </section>
 
+    <Recommend
+      :userId="loginUser.id"
+      :topN="4"
+      scene="buy_again"
+      title="再次购买推荐"
+      kicker="复购推荐"
+      description="结合历史订单频次与最近购买记录，优先展示更适合再次下单的助农商品。"
+    />
+
     <vxe-modal title="订单详情" v-model="open" width="760px" show-maximize showFooter resize>
       <div class="order-detail" v-if="currentOrder">
         <section class="detail-section">
@@ -188,12 +194,14 @@
 
 <script setup>
 import { computed, getCurrentInstance, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import useUserStore from '@/store/modules/user.js'
-import { listOrders, updateOrders } from '@/api/assisting/orders.js'
+import { listOrders, updateOrders, queryPaymentStatus } from '@/api/assisting/orders.js'
+import Recommend from '@/components/Recommend/index.vue'
 
 const router = useRouter()
+const route = useRoute()
 const { proxy } = getCurrentInstance()
 const { order_status } = proxy.useDict('order_status')
 const baseUrl = import.meta.env.VITE_APP_BASE_API
@@ -235,6 +243,22 @@ const fetchOrders = () => {
   queryParams.value.pageNum = 1
   queryParams.value.status = activeStatus.value
   getList()
+}
+
+const syncPaymentReturn = async () => {
+  const orderId = Array.isArray(route.query.orderId) ? route.query.orderId[0] : route.query.orderId
+  if (!orderId) {
+    return
+  }
+
+  try {
+    await queryPaymentStatus(String(orderId))
+    ElMessage.success('支付结果已同步')
+  } catch (error) {
+    console.error('同步支付结果失败：', error)
+  } finally {
+    await router.replace({ path: route.path })
+  }
 }
 
 const receipt = order => {
@@ -298,7 +322,8 @@ const getList = () => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await syncPaymentReturn()
   getList()
 })
 </script>
@@ -343,13 +368,6 @@ onMounted(() => {
   margin: 0 0 10px;
   font-size: 34px;
   color: #1c3b28;
-}
-
-.hero-description {
-  margin: 0;
-  max-width: 720px;
-  color: #62796b;
-  line-height: 1.9;
 }
 
 .hero-summary {

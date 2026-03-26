@@ -18,7 +18,7 @@
       <div class="product-info">
         <p class="product-kicker">助农优选</p>
         <h1 class="product-title">{{ product.name }}</h1>
-        <p class="product-subtitle">{{ product.subtitle || '来自优质产地的精选农产品，适合在毕业设计中展示商城完整交易流程。' }}</p>
+        <p class="product-subtitle">{{ product.subtitle || '来自优质产地的精选农产品，新鲜直达，品质更安心。' }}</p>
 
         <div class="price-panel">
           <span class="price-label">商城价</span>
@@ -47,7 +47,7 @@
           <span class="quantity-label">购买数量</span>
           <div class="quantity-control">
             <el-input-number v-model="quantity" :min="1" :max="999" size="large" />
-            <span class="inventory-tip">建议用于演示加入购物车与下单支付流程</span>
+            <span class="inventory-tip">库存充足时可直接加入购物车或立即下单</span>
           </div>
         </div>
 
@@ -64,13 +64,13 @@
     <section class="detail-extra-grid">
       <div class="info-card">
         <span class="card-label">商品亮点</span>
-        <h3>更适合答辩展示的商品详情页</h3>
-        <p>页面强化了价格区、产地信息和购买操作区，让老师更容易看清楚商品浏览与交易入口。</p>
+        <h3>产地清晰，信息完整</h3>
+        <p>集中展示价格、产地、规格与库存等信息，方便用户快速了解商品情况。</p>
       </div>
       <div class="info-card">
         <span class="card-label">平台服务</span>
-        <h3>从详情页到订单流程自然衔接</h3>
-        <p>用户可以从商品详情直接加入购物车，继续完成订单提交、支付与订单查询等后续操作。</p>
+        <h3>购买流程顺畅衔接</h3>
+        <p>用户可从商品详情直接加入购物车，继续完成结算、支付与订单查询等后续操作。</p>
       </div>
     </section>
 

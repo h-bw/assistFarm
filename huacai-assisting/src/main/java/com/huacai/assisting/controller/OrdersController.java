@@ -112,7 +112,7 @@ public class OrdersController extends BaseController {
     @PostMapping
     public AjaxResult add(@RequestBody Orders orders) {
         String ordersId = ordersService.insertOrders(orders);
-        return success(ordersId);
+        return AjaxResult.success((Object) ordersId);
     }
 
     /**

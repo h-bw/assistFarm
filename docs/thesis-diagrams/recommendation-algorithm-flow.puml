@@ -1,0 +1,47 @@
+@startuml
+scale 0.9
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName SimSun
+skinparam defaultFontSize 13
+skinparam activity {
+  BorderColor black
+  BackgroundColor white
+  DiamondBackgroundColor white
+  DiamondBorderColor black
+  RoundCorner 14
+}
+
+start
+
+:接收推荐请求;
+:读取用户ID、推荐场景、商品种子ID;
+
+if (推荐场景) then (buy_again)
+  :查询历史订单;
+  :统计购买频次、数量与最近购买时间;
+  :计算复购推荐分数;
+elseif (cross_sell)
+  :读取购物车商品或商品种子;
+  :召回相似商品;
+  :过滤购物车中已有商品;
+else (default)
+  :读取最近购买商品;
+  :召回相似商品;
+  :按“相似度 × 最近行为权重”计算分数;
+endif
+
+:合并候选商品集合;
+:根据同产地、同农户特征进行业务加权;
+
+if (结果数量不足?) then (是)
+  :补充平台热销商品;
+else (否)
+endif
+
+:过滤已购商品与重复商品;
+:生成推荐理由;
+:返回推荐商品ID与推荐理由;
+
+stop
+@enduml

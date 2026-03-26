@@ -48,24 +48,27 @@
       </section>
 
       <section class="section product-section">
-        <div class="section-header">
+        <div class="product-header">
           <div>
-            <p class="section-kicker">精选好物</p>
+            <p class="section-kicker">精选好货</p>
             <h2 class="section-title">助农产品</h2>
-            <p class="section-subtitle">精选优质农产品，帮助优质产地和消费者更高效地建立连接。</p>
+            <p class="section-subtitle">
+              精选优质农产品，帮助优质产地和消费者更高效地建立连接。
+            </p>
           </div>
-          <el-link type="primary" :underline="false" @click="goToProducts">
+          <el-link class="product-link" type="primary" :underline="false" @click="goToProducts">
             查看更多
             <el-icon><ArrowRight /></el-icon>
           </el-link>
         </div>
 
-        <div class="product-list">
+        <div class="product-panel">
+          <div class="product-list">
           <el-row :gutter="20">
             <el-col :span="6" v-for="item in productsList" :key="item.productsId">
               <div class="product-card" @click="goToProductDetail(item.productsId)">
                 <div class="product-image">
-                  <img :src="baseUrl + item.image" alt="" />
+                  <img :src="baseUrl + item.image" alt="">
                   <div class="product-tag">产地直连</div>
                 </div>
                 <div class="product-info">
@@ -73,7 +76,7 @@
                   <p class="product-origin">产地：{{ item.origin || '优质农产基地' }}</p>
                   <div class="product-meta">
                     <div class="product-price">
-                      <span class="current-price">￥{{ item.price }}</span>
+                      <span class="current-price">¥{{ item.price }}</span>
                     </div>
                     <span class="product-action">查看详情</span>
                   </div>
@@ -81,6 +84,7 @@
               </div>
             </el-col>
           </el-row>
+          </div>
         </div>
       </section>
 
@@ -89,7 +93,9 @@
           <div>
             <p class="section-kicker">政策速览</p>
             <h2 class="section-title">助农政策与扶持信息</h2>
-            <p class="section-subtitle">汇总电商助农、农产品流通、补贴扶持等常见政策方向，提升平台展示的专业度与实用性。</p>
+            <p class="section-subtitle">
+              汇总电商助农、农产品流通、补贴扶持等常见政策方向，提升平台展示的专业度与实用性。
+            </p>
           </div>
           <el-link type="primary" :underline="false" @click="goToPolicies">
             进入政策中心
@@ -147,92 +153,90 @@
 </template>
 
 <script setup>
-import { ArrowRight } from "@element-plus/icons-vue";
-import { useRouter } from "vue-router";
-import { listBanner } from "@/api/assisting/banner.js";
-import { selectList } from "@/api/assisting/products.js";
-import { listPolicies } from "@/api/assisting/policies.js";
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ArrowRight } from '@element-plus/icons-vue'
+import { listBanner } from '@/api/assisting/banner.js'
+import { selectList } from '@/api/assisting/products.js'
+import { listPolicies } from '@/api/assisting/policies.js'
 
-const router = useRouter();
-const baseUrl = import.meta.env.VITE_APP_BASE_API;
+const router = useRouter()
+const baseUrl = import.meta.env.VITE_APP_BASE_API
 
-const bannerList = ref([]);
-const productsList = ref([]);
-const policiesList = ref([]);
+const bannerList = ref([])
+const productsList = ref([])
+const policiesList = ref([])
 
 const bannerQuery = ref({
   pageNum: 1,
-  pageSize: 5,
-});
+  pageSize: 5
+})
 
 const productsQuery = ref({
   pageNum: 1,
-  pageSize: 4,
-});
+  pageSize: 4
+})
 
 const policiesQuery = ref({
   pageNum: 1,
-  pageSize: 3,
-});
+  pageSize: 3
+})
 
 const goToProducts = () => {
-  router.push("/index/products");
-};
+  router.push('/index/products')
+}
 
 const goToProductDetail = (productsId) => {
-  router.push(`/index/productDetail/${productsId}`);
-};
+  router.push(`/index/productDetail/${productsId}`)
+}
 
 const goToPolicies = () => {
-  router.push("/index/policies");
-};
+  router.push('/index/policies')
+}
 
 const goToPolicy = (policy) => {
   router.push({
-    path: "/index/policies",
+    path: '/index/policies',
     query: {
       title: policy.title,
-      category: policy.category,
-    },
-  });
-};
+      category: policy.category
+    }
+  })
+}
 
 const formatDate = (value) => {
-  if (!value) {
-    return "待更新";
-  }
-  return String(value).slice(0, 10);
-};
+  if (!value) return '待更新'
+  return String(value).slice(0, 10)
+}
 
 const getList = () => {
   listBanner(bannerQuery.value).then((res) => {
     bannerList.value = res.rows.map((item) => ({
       ...item,
-      image: baseUrl + item.image,
-    }));
-  });
+      image: baseUrl + item.image
+    }))
+  })
 
   selectList(productsQuery.value).then((res) => {
-    productsList.value = res.rows;
-  });
+    productsList.value = res.rows
+  })
 
   listPolicies(policiesQuery.value).then((res) => {
-    policiesList.value = res.rows;
-  });
-};
+    policiesList.value = res.rows
+  })
+}
 
 onMounted(() => {
-  getList();
-});
+  getList()
+})
 </script>
 
 <style scoped>
 .main-content {
-  flex: 1;
+  width: 100%;
   max-width: 1450px;
   margin: 0 auto;
   padding: 24px 20px 60px;
-  width: 100%;
 }
 
 .banner-section {
@@ -261,8 +265,8 @@ onMounted(() => {
   height: 100%;
   overflow: hidden;
   border-radius: 18px;
-  background-size: cover;
   background-position: center;
+  background-size: cover;
 }
 
 .banner-overlay {
@@ -287,8 +291,8 @@ onMounted(() => {
   margin-bottom: 18px;
   padding: 7px 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.14);
   font-size: 13px;
   letter-spacing: 1px;
 }
@@ -302,9 +306,9 @@ onMounted(() => {
 
 .banner-description {
   margin: 0 0 28px;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 17px;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.9);
 }
 
 .banner-actions {
@@ -313,18 +317,18 @@ onMounted(() => {
 }
 
 .value-strip {
+  position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   margin: -24px 0 56px;
-  position: relative;
-  z-index: 2;
 }
 
 .value-card {
   padding: 24px 24px 22px;
-  border-radius: 22px;
   border: 1px solid rgba(103, 150, 85, 0.14);
+  border-radius: 22px;
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 18px 40px rgba(26, 69, 42, 0.08);
   backdrop-filter: blur(8px);
@@ -345,15 +349,15 @@ onMounted(() => {
 .value-card strong {
   display: block;
   margin-bottom: 10px;
-  font-size: 22px;
   color: #1e3c2a;
+  font-size: 22px;
 }
 
 .value-card p {
   margin: 0;
   color: #667a6d;
-  line-height: 1.8;
   font-size: 14px;
+  line-height: 1.8;
 }
 
 .section {
@@ -364,6 +368,10 @@ onMounted(() => {
 .policy-section {
   position: relative;
   overflow: hidden;
+}
+
+.product-section {
+  padding-top: 10px;
 }
 
 .section-header {
@@ -384,21 +392,52 @@ onMounted(() => {
 
 .section-title {
   margin: 0 0 10px;
+  color: #213547;
   font-size: 32px;
   line-height: 1.2;
-  color: #213547;
 }
 
 .section-subtitle {
   margin: 0;
   max-width: 680px;
+  color: #627079;
   font-size: 15px;
   line-height: 1.8;
-  color: #627079;
 }
 
 .product-list {
-  margin-top: 8px;
+  margin-top: 0;
+}
+
+.product-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: -16px;
+  padding: 0 20px;
+}
+
+.product-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 24px rgba(18, 56, 35, 0.08);
+}
+
+.product-panel {
+  padding: 50px 22px 18px;
+  border: 1px solid #e6efe7;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 249, 0.98)),
+    radial-gradient(circle at top left, rgba(70, 160, 102, 0.06), transparent 34%);
+  box-shadow: 0 18px 42px rgba(24, 73, 43, 0.06);
 }
 
 .product-section::before,
@@ -415,14 +454,14 @@ onMounted(() => {
 }
 
 .product-card {
-  overflow: hidden;
   margin-bottom: 12px;
+  overflow: hidden;
   border: 1px solid #e7efe8;
   border-radius: 18px;
   background: #fff;
   box-shadow: 0 16px 36px rgba(18, 56, 35, 0.06);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
   cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .product-card:hover {
@@ -464,9 +503,9 @@ onMounted(() => {
 
 .product-name {
   margin: 0 0 10px;
+  color: #213547;
   font-size: 18px;
   font-weight: 600;
-  color: #213547;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -543,8 +582,8 @@ onMounted(() => {
 }
 
 .featured-badge {
-  background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .featured-region,
@@ -561,8 +600,8 @@ onMounted(() => {
 
 .featured-summary {
   margin: 0;
-  line-height: 1.85;
   color: rgba(255, 255, 255, 0.92);
+  line-height: 1.85;
 }
 
 .policy-side-list {
@@ -598,16 +637,16 @@ onMounted(() => {
 
 .policy-mini-title {
   margin: 14px 0 10px;
+  color: #213547;
   font-size: 18px;
   line-height: 1.45;
-  color: #213547;
 }
 
 .policy-mini-summary {
   margin: 0;
   color: #627079;
-  line-height: 1.8;
   font-size: 14px;
+  line-height: 1.8;
 }
 
 .policy-empty {
@@ -616,8 +655,8 @@ onMounted(() => {
 
 .empty-state-card {
   padding: 12px;
-  border-radius: 22px;
   border: 1px dashed rgba(92, 153, 88, 0.22);
+  border-radius: 22px;
   background: rgba(255, 255, 255, 0.72);
 }
 
@@ -656,6 +695,7 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .product-header,
   .section-header {
     flex-direction: column;
     align-items: flex-start;
@@ -693,6 +733,15 @@ onMounted(() => {
 
   .policy-section {
     padding: 22px 18px;
+  }
+
+  .product-header {
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  .product-panel {
+    padding: 22px 16px 12px;
   }
 }
 </style>
