@@ -54,7 +54,23 @@
             <el-option label="200元以上" value="200+" />
           </el-select>
         </el-col>
-        <el-col :xl="6" :lg="6" :md="24" :sm="24" :xs="24" class="filter-actions">
+        <el-col :xl="4" :lg="6" :md="12" :sm="12" :xs="24">
+          <el-select v-model="sortBy" placeholder="排序方式" style="width: 100%">
+            <el-option label="默认排序" value="default" />
+            <el-option label="价格从低到高" value="priceAsc" />
+            <el-option label="价格从高到低" value="priceDesc" />
+            <el-option label="库存优先" value="inventoryDesc" />
+            <el-option label="销量优先" value="salesDesc" />
+            <el-option label="好评率优先" value="ratingDesc" />
+            <el-option label="最新上架" value="newest" />
+          </el-select>
+        </el-col>
+        <el-col :xl="4" :lg="6" :md="12" :sm="12" :xs="24">
+          <el-select v-model="category" placeholder="选择类目" clearable style="width: 100%">
+            <el-option v-for="item in categoryOptions" :key="item" :label="item" :value="item" />
+          </el-select>
+        </el-col>
+        <el-col :xl="2" :lg="4" :md="24" :sm="24" :xs="24" class="filter-actions">
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
         </el-col>
@@ -68,18 +84,64 @@
       <el-tag v-if="priceRange" closable @close="clearFilter('price')">价格：{{ priceRangeLabel }}</el-tag>
     </div>
 
-    <div class="product-list" v-loading="loading">
+    <div class="product-list">
       <el-row :gutter="24">
-        <el-col :xl="6" :lg="8" :md="8" :sm="12" :xs="24" v-for="product in productsList" :key="product.productsId">
+        <template v-if="loading">
+          <el-col
+            v-for="n in queryParams.pageSize"
+            :key="'skeleton-' + n"
+            :xl="6"
+            :lg="8"
+            :md="8"
+            :sm="12"
+            :xs="24"
+          >
+            <div class="product-card skeleton-card">
+              <el-skeleton animated>
+                <template #template>
+                  <el-skeleton-item variant="image" style="width: 100%; height: 220px" />
+                  <div style="padding: 18px">
+                    <el-skeleton-item variant="h3" style="width: 65%" />
+                    <el-skeleton-item variant="text" style="width: 45%; margin-top: 10px" />
+                    <el-skeleton-item variant="text" style="width: 90%; margin-top: 14px" />
+                    <el-skeleton-item variant="text" style="width: 55%; margin-top: 12px" />
+                  </div>
+                </template>
+              </el-skeleton>
+            </div>
+          </el-col>
+        </template>
+
+        <el-col
+          v-else
+          :xl="6"
+          :lg="8"
+          :md="8"
+          :sm="12"
+          :xs="24"
+          v-for="product in sortedProducts"
+          :key="product.productsId"
+        >
           <div class="product-card" @click="goToProductDetail(product.productsId)">
             <div class="product-image">
-              <img :src="baseUrl + product.image" alt="" />
+              <img :src="resolveImageUrl(product.image)" alt="" />
               <div class="product-actions">
-                <el-button type="primary" size="small" round @click.stop="addToCart(product)">
+                <el-button
+                  type="primary"
+                  size="small"
+                  round
+                  :disabled="Number(product.inventory || 0) <= 0"
+                  @click.stop="addToCart(product)"
+                >
                   加入购物车
                 </el-button>
               </div>
               <div class="product-origin-badge">{{ product.origin }}</div>
+              <div class="product-stock-badge" :class="{ soldout: Number(product.inventory || 0) <= 0 }">
+                <template v-if="Number(product.inventory || 0) <= 0">售罄</template>
+                <template v-else>库存 {{ Number(product.inventory || 0) }}</template>
+              </div>
+              <div class="product-cate-badge">{{ product._meta?.category }}</div>
             </div>
             <div class="product-info">
               <h3 class="product-name">{{ product.name }}</h3>
@@ -87,6 +149,11 @@
               <div class="product-meta">
                 <span class="product-specs">{{ product.specs }}</span>
                 <span class="product-owner">农户：{{ product.userName || '平台优选' }}</span>
+              </div>
+              <div class="product-stats">
+                <span>销量 {{ product._meta?.sales }}</span>
+                <span>好评率 {{ Number(product._meta?.rating || 0).toFixed(1) }}%</span>
+                <span>{{ product._meta?.reviewCount }}+ 评价</span>
               </div>
               <div class="product-price-row">
                 <span class="current-price">￥{{ product.price }}</span>
@@ -133,6 +200,8 @@ import { selectList } from '@/api/assisting/products.js'
 import { addCart } from '@/api/assisting/cart.js'
 import useUserStore from '@/store/modules/user'
 import Recommend from '@/components/Recommend/index.vue'
+import { withProductMeta, getProductMeta } from '@/utils/productMeta.js'
+import { getToken } from '@/utils/auth'
 
 const userStore = useUserStore()
 const userId = computed(() => userStore.id)
@@ -144,6 +213,8 @@ const total = ref(0)
 const productsList = ref([])
 const originOptions = ref([])
 const priceRange = ref('')
+const sortBy = ref('default')
+const category = ref('')
 
 const queryParams = ref({
   pageNum: 1,
@@ -154,6 +225,18 @@ const queryParams = ref({
   maxPrice: null,
   userId: null,
   userName: null
+})
+
+const categoryOptions = computed(() => {
+  const list = Array.isArray(productsList.value) ? productsList.value : []
+  const cats = list.map(item => getProductMeta(item).category).filter(Boolean)
+  return [...new Set(cats)]
+})
+
+const filteredProducts = computed(() => {
+  const list = Array.isArray(productsList.value) ? productsList.value : []
+  if (!category.value) return list
+  return list.filter(item => getProductMeta(item).category === category.value)
 })
 
 const priceRangeLabel = computed(() => {
@@ -169,6 +252,44 @@ const priceRangeLabel = computed(() => {
 const goToProductDetail = productsId => {
   router.push(`/index/productDetail/${productsId}`)
 }
+
+const resolveImageUrl = (image) => {
+  if (!image) return ''
+  const str = String(image)
+  if (/^https?:\/\//i.test(str)) return encodeURI(str)
+  if (str.startsWith('/downloaded-images/')) return encodeURI(str)
+  if (str.startsWith('/.downloaded-images/')) {
+    return encodeURI(str.replace('/.downloaded-images/', '/downloaded-images/'))
+  }
+  return encodeURI(baseUrl + str)
+}
+
+const sortedProducts = computed(() => {
+  const list = Array.isArray(filteredProducts.value) ? [...filteredProducts.value] : []
+  const toNumber = val => (val === null || val === undefined || val === '' ? 0 : Number(val))
+  const toTime = val => {
+    if (!val) return 0
+    const t = Date.parse(String(val).replace(/-/g, '/'))
+    return Number.isNaN(t) ? 0 : t
+  }
+
+  switch (sortBy.value) {
+    case 'priceAsc':
+      return list.sort((a, b) => toNumber(a.price) - toNumber(b.price))
+    case 'priceDesc':
+      return list.sort((a, b) => toNumber(b.price) - toNumber(a.price))
+    case 'inventoryDesc':
+      return list.sort((a, b) => toNumber(b.inventory) - toNumber(a.inventory))
+    case 'newest':
+      return list.sort((a, b) => toTime(b.createTime) - toTime(a.createTime))
+    case 'salesDesc':
+      return list.sort((a, b) => getProductMeta(b).sales - getProductMeta(a).sales)
+    case 'ratingDesc':
+      return list.sort((a, b) => getProductMeta(b).rating - getProductMeta(a).rating)
+    default:
+      return list
+  }
+})
 
 const applyPriceRange = value => {
   if (!value) {
@@ -208,6 +329,8 @@ const resetQuery = () => {
     userName: null
   }
   priceRange.value = ''
+  category.value = ''
+  sortBy.value = 'default'
   getList()
 }
 
@@ -227,6 +350,16 @@ const clearFilter = type => {
 }
 
 const addToCart = product => {
+  if (!getToken()) {
+    ElMessage.warning('请先登录后再加入购物车')
+    router.push(`/login?redirect=/index/productDetail/${product.productsId}`)
+    return
+  }
+  const inventory = Number(product.inventory || 0)
+  if (inventory <= 0) {
+    ElMessage.warning('该商品库存不足')
+    return
+  }
   loading.value = true
   addCart({
     productsId: product.productsId,
@@ -255,7 +388,7 @@ const getList = () => {
   loading.value = true
   selectList(queryParams.value).then(res => {
     total.value = res.total
-    productsList.value = res.rows
+    productsList.value = (res.rows || []).map(withProductMeta)
   }).finally(() => {
     loading.value = false
   })
@@ -405,6 +538,49 @@ onMounted(() => {
   background: rgba(24, 114, 65, 0.92);
   color: #fff;
   font-size: 12px;
+}
+
+.product-stock-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f3f2b;
+  font-size: 12px;
+  border: 1px solid rgba(123, 165, 97, 0.18);
+}
+
+.product-stock-badge.soldout {
+  background: rgba(255, 245, 245, 0.92);
+  color: #b42318;
+  border-color: rgba(244, 114, 114, 0.26);
+}
+
+.product-cate-badge {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #2b8a52;
+  font-size: 12px;
+  border: 1px solid rgba(123, 165, 97, 0.18);
+}
+
+.product-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: #6c8074;
+  font-size: 12px;
+}
+
+.skeleton-card {
+  cursor: default;
 }
 
 .product-info {

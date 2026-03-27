@@ -62,4 +62,6 @@ public interface ProductsMapper
      */
     public int deleteProductsByProductsIds(String[] productsIds);
     List<Products> selectProductsListByIds(@Param("list") List<String> ids);
+
+    List<String> selectLatestProductIdsExclude(@Param("excludeIds") List<String> excludeIds, @Param("limit") Integer limit);
 }

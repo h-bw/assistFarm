@@ -79,6 +79,7 @@ import { ElMessageBox } from 'element-plus'
 import { Document, Goods, HomeFilled, ShoppingCart, Tickets, User } from '@element-plus/icons-vue'
 import { getUser } from '@/api/system/user'
 import useUserStore from '@/store/modules/user.js'
+import { getToken } from '@/utils/auth'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -101,8 +102,14 @@ onMounted(() => {
 })
 
 const getList = () => {
+  if (!getToken() || !userStore.id) {
+    nickName.value = null
+    return
+  }
   getUser(userStore.id).then((res) => {
     nickName.value = res.data.nickName
+  }).catch(() => {
+    nickName.value = null
   })
 }
 

@@ -18,19 +18,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="storage"    column="storage"    />
         <result property="edible"    column="edible"    />
         <result property="detail"    column="detail"    />
+        <result property="category"    column="category"    />
+        <result property="sales"    column="sales"    />
+        <result property="rating"    column="rating"    />
+        <result property="reviewCount"    column="review_count"    />
+        <result property="galleryImages"    column="gallery_images"    />
+        <result property="shippingPromise"    column="shipping_promise"    />
+        <result property="serviceTags"    column="service_tags"    />
+        <result property="farmerVerified"    column="farmer_verified"    />
         <result property="userId"    column="user_id"    />
         <result property="createTime"    column="create_time"    />
         <result property="userName"    column="user_name"    />
     </resultMap>
 
     <sql id="selectProductsVo">
-        select products_id, name, subtitle, price, image, origin, shipFrom, inventory, specs, expire, storage, edible, detail, user_id, create_time from products
+        select * from products
     </sql>
 
     <select id="selectProductsList" parameterType="Products" resultMap="ProductsResult">
-        select p.products_id, p.name, p.subtitle, p.price, p.image, p.origin, p.shipFrom,
-               p.inventory, p.specs, p.expire, p.storage, p.edible, p.detail, p.user_id, p.create_time,
-               u.user_name
+        select p.*, u.user_name
         from products p
         left join sys_user u on p.user_id = u.user_id
         <where>
@@ -129,5 +135,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{id}
         </foreach>
         )
+    </select>
+
+    <select id="selectLatestProductIdsExclude" resultType="java.lang.String">
+        SELECT products_id
+        FROM products
+        <where>
+            <if test="excludeIds != null and excludeIds.size() > 0">
+                products_id NOT IN
+                <foreach collection="excludeIds" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{limit}
     </select>
 </mapper>

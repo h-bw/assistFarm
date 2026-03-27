@@ -20,6 +20,7 @@ import java.io.InputStream;
 import org.springframework.web.multipart.MultipartFile;
 import com.huacai.assisting.domain.Banner;
 import com.huacai.assisting.service.IBannerService;
+import com.huacai.common.annotation.Anonymous;
 import com.huacai.common.utils.poi.ExcelUtil;
 import com.huacai.common.core.page.TableDataInfo;
 
@@ -39,6 +40,7 @@ public class BannerController extends BaseController
     /**
      * 查询轮播图列表
      */
+    @Anonymous
     @GetMapping("/list")
     public TableDataInfo list(Banner banner)
     {
@@ -87,6 +89,7 @@ public class BannerController extends BaseController
     /**
      * 获取轮播图详细信息
      */
+    @Anonymous
     @GetMapping(value = "/{bannerId}")
     public AjaxResult getInfo(@PathVariable("bannerId") String bannerId)
     {

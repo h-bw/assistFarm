@@ -64,4 +64,6 @@ public interface CartMapper
      * 根据产品ID和用户ID查询购物车项ID
      */
     public String selectCartIdByProductsAndUserId(String productsId, Long userId);
+
+    public List<String> selectProductIdsByUserId(@Param("userId") Long userId, @Param("limit") Integer limit);
 }

@@ -12,4 +12,6 @@ public interface PayService {
     String handleNotify(HttpServletRequest request) throws Exception;
 
     String queryAndUpdate(String orderId) throws Exception;
+
+    void markOrderPaid(String orderId);
 }

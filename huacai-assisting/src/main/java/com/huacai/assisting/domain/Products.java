@@ -76,6 +76,33 @@ public class Products extends BaseEntity
     @Excel(name = "详情")
     private String detail;
 
+    /** 类目（用于电商化展示） */
+    private String category;
+
+    /** 累计销量（用于电商化展示） */
+    private Long sales;
+
+    /** 好评率（百分比，例：98.6） */
+    private BigDecimal rating;
+
+    /** 评价数 */
+    private Long reviewCount;
+
+    /**
+     * 图集（多图），JSON 字符串或逗号分隔 URL 列表均可（前端做兼容解析）
+     * 例：["https://.../1.jpg","https://.../2.jpg"]
+     */
+    private String galleryImages;
+
+    /** 发货承诺（如：48小时发货/冷链配送） */
+    private String shippingPromise;
+
+    /** 服务标签（如：坏果包赔,7天无理由），逗号分隔 */
+    private String serviceTags;
+
+    /** 农户认证标识（1已认证，0未认证） */
+    private Integer farmerVerified;
+
     /** 用户ID */
     @Excel(name = "用户ID")
     private Long userId;

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="home-content">
     <div class="main-content">
       <section class="banner-section">
@@ -16,11 +16,11 @@
                 <h2 class="banner-title">{{ item.title }}</h2>
                 <p class="banner-description">{{ item.description }}</p>
                 <div class="banner-actions">
-                  <el-button type="primary" size="large" @click.stop="goToProducts">
-                    浏览农产品
+                  <el-button class="banner-btn banner-btn-primary" type="primary" size="large" @click.stop="goToProducts">
+                    选购助农产品
                   </el-button>
-                  <el-button plain size="large" @click.stop="goToPolicies">
-                    查看助农政策
+                  <el-button class="banner-btn banner-btn-secondary" plain size="large" @click.stop="goToPolicies">
+                    了解扶持政策
                   </el-button>
                 </div>
               </div>
@@ -31,19 +31,19 @@
 
       <section class="value-strip">
         <div class="value-card">
-          <span class="value-label">源头直采</span>
-          <strong>严选产地与农户</strong>
-          <p>突出助农商城的产地属性，让页面更有平台可信度与真实感。</p>
+          <span class="value-label">源头助农</span>
+          <strong>优选产地与农户资源</strong>
+          <p>围绕特色产地和农户主体组织商品展示，突出助农商城的真实来源与平台可信度。</p>
         </div>
         <div class="value-card">
           <span class="value-label">政策联动</span>
-          <strong>政策信息同步展示</strong>
-          <p>商城展示与助农政策形成联动，强化平台服务与扶持导向。</p>
+          <strong>同步展示扶持政策信息</strong>
+          <p>将商品展示与助农政策信息联动呈现，便于用户了解补贴、培训、营销等支持方向。</p>
         </div>
         <div class="value-card">
           <span class="value-label">交易闭环</span>
-          <strong>下单支付到订单跟踪</strong>
-          <p>围绕商品浏览、订单支付、订单管理形成完整的用户使用路径。</p>
+          <strong>覆盖浏览下单与订单跟踪</strong>
+          <p>围绕商品浏览、订单支付与订单管理构建完整流程，提升商城功能完整性与使用体验。</p>
         </div>
       </section>
 
@@ -53,7 +53,7 @@
             <p class="section-kicker">精选好货</p>
             <h2 class="section-title">助农产品</h2>
             <p class="section-subtitle">
-              精选优质农产品，帮助优质产地和消费者更高效地建立连接。
+              精选优质农产品，帮助优质产地与消费者更高效地建立连接。
             </p>
           </div>
           <el-link class="product-link" type="primary" :underline="false" @click="goToProducts">
@@ -64,26 +64,26 @@
 
         <div class="product-panel">
           <div class="product-list">
-          <el-row :gutter="20">
-            <el-col :span="6" v-for="item in productsList" :key="item.productsId">
-              <div class="product-card" @click="goToProductDetail(item.productsId)">
-                <div class="product-image">
-                  <img :src="baseUrl + item.image" alt="">
-                  <div class="product-tag">产地直连</div>
-                </div>
-                <div class="product-info">
-                  <h3 class="product-name">{{ item.name }}</h3>
-                  <p class="product-origin">产地：{{ item.origin || '优质农产基地' }}</p>
-                  <div class="product-meta">
-                    <div class="product-price">
-                      <span class="current-price">¥{{ item.price }}</span>
+            <el-row :gutter="20">
+              <el-col :span="6" v-for="item in productsList" :key="item.productsId">
+                <div class="product-card" @click="goToProductDetail(item.productsId)">
+                  <div class="product-image">
+                    <img :src="resolveImageUrl(item.image)" alt="">
+                    <div class="product-tag">产地直连</div>
+                  </div>
+                  <div class="product-info">
+                    <h3 class="product-name">{{ item.name }}</h3>
+                    <p class="product-origin">产地：{{ item.origin || '优质农产基地' }}</p>
+                    <div class="product-meta">
+                      <div class="product-price">
+                        <span class="current-price">¥{{ item.price }}</span>
+                      </div>
+                      <span class="product-action">查看详情</span>
                     </div>
-                    <span class="product-action">查看详情</span>
                   </div>
                 </div>
-              </div>
-            </el-col>
-          </el-row>
+              </el-col>
+            </el-row>
           </div>
         </div>
       </section>
@@ -151,7 +151,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -162,6 +161,17 @@ import { listPolicies } from '@/api/assisting/policies.js'
 
 const router = useRouter()
 const baseUrl = import.meta.env.VITE_APP_BASE_API
+
+const resolveImageUrl = (image) => {
+  if (!image) return ''
+  const str = String(image)
+  if (/^https?:\/\//i.test(str)) return encodeURI(str)
+  if (str.startsWith('/downloaded-images/')) return encodeURI(str)
+  if (str.startsWith('/.downloaded-images/')) {
+    return encodeURI(str.replace('/.downloaded-images/', '/downloaded-images/'))
+  }
+  return encodeURI(baseUrl + str)
+}
 
 const bannerList = ref([])
 const productsList = ref([])
@@ -181,6 +191,38 @@ const policiesQuery = ref({
   pageNum: 1,
   pageSize: 3
 })
+
+const bannerEnhancements = [
+  {
+    title: '优质农产直连餐桌',
+    description: '依托助农电商平台促进产销衔接，让更多优质农产品从田间地头走向千家万户。'
+  },
+  {
+    title: '消费帮扶助力乡村振兴',
+    description: '围绕消费帮扶与乡村振兴协同发力，拓宽特色农产品销路，带动农户稳定增收。'
+  },
+  {
+    title: '数商兴农激活乡村活力',
+    description: '结合电商推广、品牌展示与线上交易服务，提升农产品流通效率，增强助农服务能力。'
+  }
+]
+
+const decorateBanner = (item, index) => {
+  const enhancement = bannerEnhancements[index]
+  if (!enhancement) {
+    return {
+      ...item,
+      image: baseUrl + item.image
+    }
+  }
+
+  return {
+    ...item,
+    title: enhancement.title,
+    description: enhancement.description,
+    image: baseUrl + item.image
+  }
+}
 
 const goToProducts = () => {
   router.push('/index/products')
@@ -211,14 +253,14 @@ const formatDate = (value) => {
 
 const getList = () => {
   listBanner(bannerQuery.value).then((res) => {
-    bannerList.value = res.rows.map((item) => ({
-      ...item,
-      image: baseUrl + item.image
-    }))
+    bannerList.value = (res.rows || []).map((item, index) => decorateBanner(item, index))
   })
 
   selectList(productsQuery.value).then((res) => {
-    productsList.value = res.rows
+    productsList.value = (res.rows || []).map(item => ({
+      ...item,
+      image: resolveImageUrl(item.image)
+    }))
   })
 
   listPolicies(policiesQuery.value).then((res) => {
@@ -314,6 +356,33 @@ onMounted(() => {
 .banner-actions {
   display: flex;
   gap: 12px;
+}
+
+.banner-btn {
+  min-width: 156px;
+  height: 46px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 14px 28px rgba(15, 43, 27, 0.16);
+}
+
+.banner-btn-primary {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.banner-btn-secondary {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(6px);
+}
+
+.banner-btn-secondary:hover,
+.banner-btn-secondary:focus {
+  color: #173924;
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.96);
 }
 
 .value-strip {
@@ -745,3 +814,8 @@ onMounted(() => {
   }
 }
 </style>
+
+
+
+
+

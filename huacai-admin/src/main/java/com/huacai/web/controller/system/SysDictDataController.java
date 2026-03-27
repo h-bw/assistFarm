@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.huacai.common.annotation.Anonymous;
 import com.huacai.common.annotation.Log;
 import com.huacai.common.core.controller.BaseController;
 import com.huacai.common.core.domain.AjaxResult;
@@ -72,6 +73,7 @@ public class SysDictDataController extends BaseController
     /**
      * 根据字典类型查询字典数据信息
      */
+    @Anonymous
     @GetMapping(value = "/type/{dictType}")
     public AjaxResult dictType(@PathVariable String dictType)
     {

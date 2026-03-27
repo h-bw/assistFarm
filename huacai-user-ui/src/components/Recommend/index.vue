@@ -13,7 +13,7 @@
       <el-col :xl="6" :lg="8" :md="8" :sm="12" :xs="24" v-for="item in recommendedItems" :key="item.productsId">
         <div class="product-card" @click="goToDetail(item.productsId)">
           <div class="product-image">
-            <img :src="baseUrl + item.image" alt="">
+            <img :src="resolveImageUrl(item.image)" alt="">
             <div class="product-tag">{{ sceneTag }}</div>
           </div>
           <div class="product-info">
@@ -25,7 +25,7 @@
             </div>
             <p v-if="item.recommendReason" class="recommend-reason">{{ item.recommendReason }}</p>
             <div class="product-price-row">
-              <span class="current-price">楼{{ item.price }}</span>
+              <span class="current-price">¥{{ item.price }}</span>
               <span class="product-link">查看详情</span>
             </div>
           </div>
@@ -43,10 +43,21 @@ import { getRecommendations, getProductListByIds, mergeRecommendationProducts } 
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 const router = useRouter()
 
+const resolveImageUrl = (image) => {
+  if (!image) return ''
+  const str = String(image)
+  if (/^https?:\/\//i.test(str)) return encodeURI(str)
+  if (str.startsWith('/downloaded-images/')) return encodeURI(str)
+  if (str.startsWith('/.downloaded-images/')) {
+    return encodeURI(str.replace('/.downloaded-images/', '/downloaded-images/'))
+  }
+  return encodeURI(baseUrl + str)
+}
+
 const props = defineProps({
   userId: {
-    type: Number,
-    required: true
+    type: [Number, String],
+    default: ''
   },
   topN: {
     type: Number,

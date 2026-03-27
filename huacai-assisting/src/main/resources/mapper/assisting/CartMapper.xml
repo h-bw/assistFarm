@@ -65,6 +65,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where products_id = #{productsId} and user_id = #{userId}
     </select>
 
+    <select id="selectProductIdsByUserId" resultType="java.lang.String">
+        select products_id
+        from cart
+        where user_id = #{userId}
+        group by products_id
+        order by max(create_time) desc
+        limit #{limit}
+    </select>
+
     <insert id="insertCart" parameterType="Cart">
         insert into cart
         <trim prefix="(" suffix=")" suffixOverrides=",">

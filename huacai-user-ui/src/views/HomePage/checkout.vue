@@ -65,7 +65,7 @@
         <div class="checkout-section">
           <div class="product-list">
             <div class="product-item" v-for="item in farmerOrder.ordersProductsList" :key="item.cartId">
-              <img :src="baseUrl + item.image" class="product-image" alt="">
+              <img :src="resolveImageUrl(item.image)" class="product-image" alt="">
               <div class="product-info">
                 <div class="product-name">{{ item.productsName }}</div>
                 <div class="product-specs"><span>规格: {{ item.specs }}</span></div>
@@ -167,13 +167,24 @@ import { delAddresses, listAddresses } from "@/api/assisting/addresses.js"
 import { ElMessage, ElMessageBox } from "element-plus"
 import AddressFormDialog from "@/views/dialog/AddressFormDialog.vue"
 import { addOrders } from "@/api/assisting/orders.js"
-import { delCart } from "@/api/assisting/cart.js"
 import SvgIcon from "@/components/SvgIcon/index.vue"
 
 // 直接使用后端真实地址，window.location.href 不走 Vite 代理
 // 如果后端端口有变化，修改这里即可
-const backendUrl = 'http://localhost:8080'
+const backendUrl = (import.meta.env.VITE_APP_BACKEND_URL || window.location.origin).replace(/\/$/, '')
 const baseUrl = import.meta.env.VITE_APP_BASE_API
+const CART_CLEANUP_STORAGE_KEY = 'pendingCheckoutCartCleanup'
+const CART_CLEANUP_TTL = 1000 * 60 * 60 * 24
+const resolveImageUrl = (image) => {
+  if (!image) return ''
+  const str = String(image)
+  if (/^https?:\/\//i.test(str)) return encodeURI(str)
+  if (str.startsWith('/downloaded-images/')) return encodeURI(str)
+  if (str.startsWith('/.downloaded-images/')) {
+    return encodeURI(str.replace('/.downloaded-images/', '/downloaded-images/'))
+  }
+  return encodeURI(baseUrl + str)
+}
 const router = useRouter()
 const cartStore = useCartStore()
 const loginUser = useUserStore()
@@ -263,6 +274,16 @@ const groupItemsByFarmers = (items) => {
   return Object.values(farmerMap)
 }
 
+const persistPendingCartCleanup = (orderIds, cartIds) => {
+  localStorage.setItem(CART_CLEANUP_STORAGE_KEY, JSON.stringify({
+    userId: String(loginUser.id || ''),
+    orderIds: (orderIds || []).filter(Boolean).map(item => String(item)),
+    cartIds: (cartIds || []).filter(Boolean).map(item => String(item)),
+    savedAt: Date.now(),
+    expiresAt: Date.now() + CART_CLEANUP_TTL
+  }))
+}
+
 const extractOrderId = (result) => {
   if (!result) {
     return null
@@ -310,8 +331,9 @@ const submitOrder = () => {
       }
 
       // 清理购物车中已结算的产品
+      // Defer cart cleanup until payment success so failed payments can be retried.
       const cartsId = checkoutItems.value.map(item => item.cartId)
-      await delCart(cartsId)
+      persistPendingCartCleanup(orderIdList.value, cartsId)
 
       activeStep.value = 2
       ElMessage({ type: 'success', message: '订单提交成功' })
@@ -338,27 +360,84 @@ const confirmPayment = () => {
   const payUrl = `${backendUrl}/api/pay/${orderId}`
   fetch(payUrl, { method: 'GET', credentials: 'omit' })
     .then(async res => {
-      if (!res.ok) throw new Error(`支付接口请求失败：${res.status}`)
-      return res.text()
+      const text = await res.text()
+      if (!res.ok) {
+        throw new Error(extractPayError(text) || `支付接口请求失败：${res.status}`)
+      }
+      return text
     })
     .then(html => {
       const container = document.createElement('div')
       container.innerHTML = html
       // 移除脚本，防止重复提交或受浏览器策略影响
       container.querySelectorAll('script').forEach(s => s.remove())
-      const form = container.querySelector('form')
-      if (!form) throw new Error('支付表单解析失败')
+      const sourceForm = container.querySelector('form')
+      if (!sourceForm) throw new Error(extractPayError(html) || '支付表单解析失败')
+      const action = sourceForm.getAttribute('action') || ''
+      if (!/alipay/i.test(action)) {
+        throw new Error('支付网关地址异常，请稍后重试')
+      }
+      const sourceInputs = Array.from(sourceForm.querySelectorAll('input'))
+      const hasBizContent = sourceInputs.some(input => input.name === 'biz_content' && String(input.value || '').trim())
+      if (!hasBizContent) {
+        throw new Error('支付参数缺失（biz_content），请稍后重试')
+      }
+      // 重建 form，避免直接搬运节点导致个别浏览器丢失 hidden 参数
+      const form = document.createElement('form')
+      form.method = 'post'
+      form.action = action
+      form.acceptCharset = 'UTF-8'
+      sourceInputs.forEach(input => {
+        const hidden = document.createElement('input')
+        hidden.type = 'hidden'
+        hidden.name = input.name
+        hidden.value = input.value
+        form.appendChild(hidden)
+      })
       document.body.appendChild(form)
       form.submit()
-      // 兜底：若浏览器阻止 form.submit 导致没有触发跳转
-      // 则回退到整页跳转，确保能进入支付宝沙盒
-      setTimeout(() => {
-        window.location.href = payUrl
-      }, 2000)
     })
     .catch(err => {
-      ElMessage.error('支付跳转失败：' + (err?.message || err))
+      showPayErrorWithRetry(err, () => confirmPayment())
     })
+}
+
+const extractPayError = (raw) => {
+  if (!raw) return ''
+  const text = String(raw)
+  const match = text.match(/\"msg\"\s*:\s*\"([^\"]+)\"/)
+  if (match && match[1]) return match[1]
+  const htmlTitle = text.match(/<title>([^<]+)<\/title>/i)
+  if (htmlTitle && htmlTitle[1]) return htmlTitle[1]
+  if (text.includes('订单已支付')) return '订单已支付，无需重复支付'
+  if (text.includes('订单已取消')) return '订单已取消，无法发起支付'
+  if (text.includes('订单金额异常')) return '订单金额异常，请刷新后重试'
+  if (text.includes('支付配置不完整')) return '支付配置不完整，请联系管理员'
+  if (text.includes('SYSTEM_ERROR')) return '支付宝沙箱系统繁忙，请稍后再试'
+  if (text.includes('unable to handle this request')) return '支付宝沙箱页面暂不可用，请稍后重试'
+  if (text.includes('支付网关预检查失败')) return text
+  return ''
+}
+
+const showPayErrorWithRetry = (err, retryAction) => {
+  const rawMessage = String(err?.message || err || '未知错误')
+  const refined = extractPayError(rawMessage) || rawMessage
+  const isSandboxAbnormal = /SYSTEM_ERROR|unable to handle this request|沙箱|alipaydev/i.test(rawMessage)
+  if (!isSandboxAbnormal) {
+    ElMessage.error('支付跳转失败：' + refined)
+    return
+  }
+  ElMessageBox.confirm(
+    `检测到支付宝沙箱可能异常：${refined}\n\n建议切换无痕窗口或稍后重试。是否立即重试支付？`,
+    '支付提示',
+    {
+      confirmButtonText: '立即重试',
+      cancelButtonText: '稍后再试',
+      type: 'warning'
+    }
+  ).then(() => {
+    retryAction()
+  }).catch(() => {})
 }
 
 onMounted(() => {

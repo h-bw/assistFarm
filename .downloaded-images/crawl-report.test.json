@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-03-26T14:44:50.627Z",
+  "args": {
+    "sql": "D:\\DevelopSoft\\assistFarm\\sql\\huacai-assisting.sql",
+    "out": "D:\\DevelopSoft\\assistFarm\\.downloaded-images",
+    "per": 3,
+    "limitProducts": 3,
+    "start": 0,
+    "concurrency": 2,
+    "querySuffix": " 实物 高清",
+    "timeoutMs": 20000,
+    "retry": 2,
+    "safeSearch": 1,
+    "overfetchFactor": 4,
+    "report": ".downloaded-images\\\\crawl-report.test.json"
+  },
+  "summary": {
+    "products": 3,
+    "ok": 3,
+    "failed": 0,
+    "downloaded": 3,
+    "skipped": 6
+  },
+  "failedProducts": []
+}

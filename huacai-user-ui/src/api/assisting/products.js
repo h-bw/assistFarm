@@ -9,11 +9,19 @@ export function listProducts(query) {
   })
 }
 
-// 查询农户产品详细
+// 查询农户产品详情
 export function getProducts(productsId) {
   return request({
     url: '/assisting/products/' + productsId,
     method: 'get'
+  })
+}
+
+// 上报商品详情浏览行为
+export function reportProductView(productsId) {
+  return request({
+    url: '/assisting/products/' + productsId + '/view',
+    method: 'post'
   })
 }
 
@@ -22,7 +30,7 @@ export function addProducts(data) {
   return request({
     url: '/assisting/products',
     method: 'post',
-    data: data
+    data
   })
 }
 
@@ -31,7 +39,7 @@ export function updateProducts(data) {
   return request({
     url: '/assisting/products',
     method: 'put',
-    data: data
+    data
   })
 }
 
@@ -43,9 +51,7 @@ export function delProducts(productsId) {
   })
 }
 
-/**
- * 查询农户产品列表(无数据权限)
- */
+// 查询农户产品列表（无数据权限）
 export function selectList(query) {
   return request({
     url: '/assisting/products/selectList',

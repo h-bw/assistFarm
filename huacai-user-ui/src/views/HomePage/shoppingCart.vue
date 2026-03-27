@@ -48,7 +48,7 @@
           <el-table-column label="商品信息" min-width="360">
             <template #default="{ row }">
               <div class="product-info-cell">
-                <img :src="baseUrl + row.image" class="product-image" alt="">
+                <img :src="resolveImageUrl(row.image)" class="product-image" alt="">
                 <div class="product-details">
                   <div class="product-name">{{ row.productsName }}</div>
                   <div class="product-origin">规格：{{ row.specs }}</div>
@@ -145,6 +145,16 @@ import Recommend from '@/components/Recommend/index.vue'
 
 const router = useRouter()
 const baseUrl = import.meta.env.VITE_APP_BASE_API
+const resolveImageUrl = (image) => {
+  if (!image) return ''
+  const str = String(image)
+  if (/^https?:\/\//i.test(str)) return encodeURI(str)
+  if (str.startsWith('/downloaded-images/')) return encodeURI(str)
+  if (str.startsWith('/.downloaded-images/')) {
+    return encodeURI(str.replace('/.downloaded-images/', '/downloaded-images/'))
+  }
+  return encodeURI(baseUrl + str)
+}
 const selectedItems = ref([])
 const cartStore = useCartStore()
 const loading = ref(false)
