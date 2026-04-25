@@ -35,7 +35,7 @@
             <template #description>
               <div class="empty-state-text">
                 <strong>你还没有产生订单</strong>
-                <p>可以先去浏览产品并完成加入购物车、下单与支付流程。</p>
+                <p>可以先去浏览产品，并完成加入购物车、下单与支付流程。</p>
               </div>
             </template>
             <el-button type="primary" @click="router.push('/index/products')">去逛逛</el-button>
@@ -57,16 +57,16 @@
 
           <div class="order-products">
             <div class="product-row" v-for="item in order.ordersProductsList" :key="item.opId">
-              <img :src="resolveImageUrl(item.image)" alt="" class="product-image" />
+              <img :src="resolveImageUrl(item.image)" :alt="item.productsName" class="product-image" />
               <div class="product-info">
                 <div class="product-name">{{ item.productsName }}</div>
                 <div class="product-farmer">来自农户：{{ order.farmersName }}</div>
                 <div class="product-specs">规格：{{ item.specs }}</div>
               </div>
               <div class="product-data">
-                <span class="product-price">￥{{ Number(item.price).toFixed(2) }}</span>
+                <span class="product-price">¥{{ Number(item.price).toFixed(2) }}</span>
                 <span class="product-quantity">x{{ item.quantity }}</span>
-                <span class="product-subtotal">小计 ￥{{ (Number(item.price) * Number(item.quantity)).toFixed(2) }}</span>
+                <span class="product-subtotal">小计 ¥{{ (Number(item.price) * Number(item.quantity)).toFixed(2) }}</span>
               </div>
             </div>
           </div>
@@ -74,7 +74,7 @@
           <footer class="order-footer">
             <div class="order-total">
               共 {{ order.ordersProductsList.length }} 件商品
-              <span class="total-amount">￥{{ Number(order.totalPrice).toFixed(2) }}</span>
+              <span class="total-amount">¥{{ Number(order.totalPrice).toFixed(2) }}</span>
             </div>
             <div class="order-actions">
               <el-button size="small" @click="viewOrderDetail(order.ordersId)">订单详情</el-button>
@@ -160,14 +160,14 @@
           <h3>商品信息</h3>
           <div class="detail-products">
             <div class="detail-product-row" v-for="item in currentOrder.ordersProductsList" :key="item.opId">
-              <img :src="resolveImageUrl(item.image)" alt="" class="detail-product-image" />
+              <img :src="resolveImageUrl(item.image)" :alt="item.productsName" class="detail-product-image" />
               <div class="detail-product-info">
                 <div class="detail-product-name">{{ item.productsName }}</div>
                 <div class="detail-product-specs">规格：{{ item.specs }}</div>
               </div>
-              <div class="detail-product-price">￥{{ Number(item.price).toFixed(2) }}</div>
+              <div class="detail-product-price">¥{{ Number(item.price).toFixed(2) }}</div>
               <div class="detail-product-price">x{{ item.quantity }}</div>
-              <div class="detail-product-total">￥{{ (Number(item.price) * Number(item.quantity)).toFixed(2) }}</div>
+              <div class="detail-product-total">¥{{ (Number(item.price) * Number(item.quantity)).toFixed(2) }}</div>
             </div>
           </div>
         </section>
@@ -177,7 +177,7 @@
           <div class="amount-box">
             <div class="amount-row">
               <span>商品总价</span>
-              <strong>￥{{ Number(currentOrder.totalPrice).toFixed(2) }}</strong>
+              <strong>¥{{ Number(currentOrder.totalPrice).toFixed(2) }}</strong>
             </div>
           </div>
         </section>
@@ -197,10 +197,11 @@ import { computed, getCurrentInstance, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import useUserStore from '@/store/modules/user.js'
-import { listOrders, updateOrders, queryPaymentStatus } from '@/api/assisting/orders.js'
+import { getOrders, listOrders, updateOrders, queryPaymentStatus } from '@/api/assisting/orders.js'
 import { delCart } from '@/api/assisting/cart.js'
 import { useCartStore } from '@/store/modules/cart.js'
 import Recommend from '@/components/Recommend/index.vue'
+import { resolveImageUrl as resolveAssetImageUrl } from '@/utils/image.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -210,16 +211,7 @@ const baseUrl = import.meta.env.VITE_APP_BASE_API
 const backendUrl = (import.meta.env.VITE_APP_BACKEND_URL || window.location.origin).replace(/\/$/, '')
 const CART_CLEANUP_STORAGE_KEY = 'pendingCheckoutCartCleanup'
 const CART_CLEANUP_TTL = 1000 * 60 * 60 * 24
-const resolveImageUrl = (image) => {
-  if (!image) return ''
-  const str = String(image)
-  if (/^https?:\/\//i.test(str)) return encodeURI(str)
-  if (str.startsWith('/downloaded-images/')) return encodeURI(str)
-  if (str.startsWith('/.downloaded-images/')) {
-    return encodeURI(str.replace('/.downloaded-images/', '/downloaded-images/'))
-  }
-  return encodeURI(baseUrl + str)
-}
+const resolveImageUrl = image => resolveAssetImageUrl(image, baseUrl)
 
 const open = ref(false)
 const currentOrder = ref(null)
@@ -318,6 +310,14 @@ const recoverPendingCartCleanup = async () => {
   await finalizePendingCartCleanup(String(matchedPaidOrder.ordersId))
 }
 
+const resolvePaidOrderByStatus = async (orderId) => {
+  if (!orderId) {
+    return false
+  }
+  const result = await getOrders(String(orderId))
+  return shouldCleanupByStatus(result?.data?.status)
+}
+
 const viewOrderDetail = ordersId => {
   currentOrder.value = ordersList.value.find(order => order.ordersId === ordersId)
   open.value = true
@@ -338,13 +338,22 @@ const syncPaymentReturn = async () => {
   try {
     const result = await queryPaymentStatus(String(orderId))
     const payState = String(result?.data || '')
-    if (payState === 'paid') {
+    if (payState === 'paid' || await resolvePaidOrderByStatus(orderId)) {
       await finalizePendingCartCleanup(String(orderId))
       ElMessage.success('支付成功，购物车已更新')
       return
     }
     ElMessage.warning('支付尚未完成，购物车商品已保留')
   } catch (error) {
+    try {
+      if (await resolvePaidOrderByStatus(orderId)) {
+        await finalizePendingCartCleanup(String(orderId))
+        ElMessage.success('支付成功，购物车已更新')
+        return
+      }
+    } catch (statusError) {
+      console.error('回跳后补查订单状态失败:', statusError)
+    }
     console.error('同步支付结果失败:', error)
   } finally {
     await router.replace({ path: route.path })
