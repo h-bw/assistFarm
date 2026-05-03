@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.huacai.assisting.mapper.ItemSimilarityMapper">
+
+    <delete id="truncateTable">
+        DELETE FROM item_similarity
+    </delete>
+
+    <insert id="batchInsert" parameterType="list">
+        INSERT INTO item_similarity (item_id_a, item_id_b, similarity) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.itemIdA}, #{item.itemIdB}, #{item.similarity})
+        </foreach>
+    </insert>
+
+    <select id="selectTopSimilar" resultType="string">
+        SELECT item_id_b
+        FROM item_similarity
+        WHERE item_id_a = #{itemId}
+        ORDER BY similarity DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectTopSimilarWithScores" resultType="map">
+        SELECT item_id_b, similarity
+        FROM item_similarity
+        WHERE item_id_a = #{itemId}
+        ORDER BY similarity DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

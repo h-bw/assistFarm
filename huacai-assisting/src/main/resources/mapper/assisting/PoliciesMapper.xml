@@ -16,11 +16,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="contactPerson"    column="contact_person"    />
         <result property="phone"    column="phone"    />
         <result property="address"    column="address"    />
+        <result property="sourceLink"    column="source_link"    />
         <result property="createTime"    column="create_time"    />
     </resultMap>
 
     <sql id="selectPoliciesVo">
-        select policies_id, title, category, region, publisher, summary, content, department, contact_person, phone, address, create_time from policies
+        select policies_id, title, category, region, publisher, summary, content, department, contact_person, phone, address, source_link, create_time from policies
     </sql>
 
     <select id="selectPoliciesList" parameterType="Policies" resultMap="PoliciesResult">
@@ -29,6 +30,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="title != null  and title != ''"> and title like concat('%', #{title}, '%')</if>
             <if test="category != null  and category != ''"> and category = #{category}</if>
         </where>
+        order by create_time desc
     </select>
     
     <select id="selectPoliciesByPoliciesId" parameterType="String" resultMap="PoliciesResult">
@@ -50,6 +52,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="contactPerson != null and contactPerson != ''">contact_person,</if>
             <if test="phone != null and phone != ''">phone,</if>
             <if test="address != null and address != ''">address,</if>
+            <if test="sourceLink != null and sourceLink != ''">source_link,</if>
             <if test="createTime != null">create_time,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -64,6 +67,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="contactPerson != null and contactPerson != ''">#{contactPerson},</if>
             <if test="phone != null and phone != ''">#{phone},</if>
             <if test="address != null and address != ''">#{address},</if>
+            <if test="sourceLink != null and sourceLink != ''">#{sourceLink},</if>
             <if test="createTime != null">#{createTime},</if>
          </trim>
     </insert>
@@ -81,6 +85,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="contactPerson != null and contactPerson != ''">contact_person = #{contactPerson},</if>
             <if test="phone != null and phone != ''">phone = #{phone},</if>
             <if test="address != null and address != ''">address = #{address},</if>
+            <if test="sourceLink != null and sourceLink != ''">source_link = #{sourceLink},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
         </trim>
         where policies_id = #{policiesId}

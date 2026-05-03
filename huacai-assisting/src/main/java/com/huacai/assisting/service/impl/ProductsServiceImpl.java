@@ -155,4 +155,10 @@ public class ProductsServiceImpl implements IProductsService {
     public List<Products> selectList(Products products) {
         return productsMapper.selectProductsList(products);
     }
+
+    //根据iD批量查询产品
+    @Override
+    public List<Products> selectProductsListByIds(List<String> ids) {
+        return productsMapper.selectProductsListByIds(ids);
+    }
 }

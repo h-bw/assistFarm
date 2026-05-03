@@ -1,8 +1,12 @@
 package com.huacai.assisting.controller;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
+import com.huacai.assisting.domain.ProductViewLog;
+import com.huacai.assisting.mapper.ProductViewLogMapper;
 import com.huacai.assisting.vo.ReplenishVo;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,8 +29,12 @@ import java.io.InputStream;
 import org.springframework.web.multipart.MultipartFile;
 import com.huacai.assisting.domain.Products;
 import com.huacai.assisting.service.IProductsService;
+import com.huacai.common.annotation.Anonymous;
 import com.huacai.common.utils.poi.ExcelUtil;
 import com.huacai.common.core.page.TableDataInfo;
+import com.huacai.common.core.domain.model.LoginUser;
+import com.huacai.common.utils.SecurityUtils;
+import com.huacai.common.utils.uuid.IdUtils;
 
 /**
  * 农户产品Controller
@@ -39,6 +47,9 @@ import com.huacai.common.core.page.TableDataInfo;
 public class ProductsController extends BaseController {
     @Autowired
     private IProductsService productsService;
+
+    @Autowired
+    private ProductViewLogMapper productViewLogMapper;
 
     /**
      * 查询农户产品列表
@@ -87,9 +98,35 @@ public class ProductsController extends BaseController {
     /**
      * 获取农户产品详细信息
      */
+    @Anonymous
     @GetMapping(value = "/{productsId}")
     public AjaxResult getInfo(@PathVariable("productsId") String productsId) {
         return success(productsService.selectProductsByProductsId(productsId));
+    }
+
+    /**
+     * 上报商品详情浏览行为
+     */
+    @Anonymous
+    @PostMapping("/{productsId}/view")
+    public AjaxResult reportView(@PathVariable("productsId") String productsId) {
+        LoginUser loginUser = resolveLoginUserSafely();
+        if (loginUser == null || productsService.selectProductsByProductsId(productsId) == null) {
+            return AjaxResult.success();
+        }
+
+        Date now = new Date();
+        ProductViewLog productViewLog = new ProductViewLog();
+        productViewLog.setViewId(IdUtils.fastSimpleUUID());
+        productViewLog.setUserId(loginUser.getUserId());
+        productViewLog.setProductsId(productsId);
+        productViewLog.setViewSource("detail");
+        productViewLog.setViewCount(1);
+        productViewLog.setLastViewTime(now);
+        productViewLog.setCreateTime(now);
+        productViewLog.setUpdateTime(now);
+        productViewLogMapper.upsertProductViewLog(productViewLog);
+        return AjaxResult.success();
     }
 
     /**
@@ -122,6 +159,7 @@ public class ProductsController extends BaseController {
     /**
      * 查询农户产品列表(无数据权限)
      */
+    @Anonymous
     @GetMapping("/selectList")
     public TableDataInfo selectList(Products products) {
         startPage();
@@ -157,6 +195,23 @@ public class ProductsController extends BaseController {
 
         //更新产品的库存
         return toAjax(productsService.updateProducts(products));
+    }
+    //根据id批量查询产品
+    @PostMapping("/listByIds")
+    public AjaxResult listByIds(@RequestBody List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return AjaxResult.success(new ArrayList<>());
+        }
+        List<Products> list = productsService.selectProductsListByIds(ids);
+        return AjaxResult.success(list);
+    }
+
+    private LoginUser resolveLoginUserSafely() {
+        try {
+            return SecurityUtils.getLoginUser();
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
 }

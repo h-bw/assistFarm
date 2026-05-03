@@ -7,7 +7,9 @@ import java.util.List;
 import com.huacai.assisting.domain.OrdersProducts;
 import com.huacai.assisting.domain.Products;
 import com.huacai.assisting.service.IProductsService;
+import com.huacai.assisting.service.PayService;
 import com.huacai.common.core.domain.entity.SysUser;
+import com.huacai.common.utils.SecurityUtils;
 import com.huacai.system.service.ISysUserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
@@ -46,6 +48,9 @@ import com.huacai.common.core.page.TableDataInfo;
 public class OrdersController extends BaseController {
     @Autowired
     private IOrdersService ordersService;
+
+    @Autowired
+    private PayService payService;
 
     @Resource
     private ISysUserService sysUserService;
@@ -112,7 +117,7 @@ public class OrdersController extends BaseController {
     @PostMapping
     public AjaxResult add(@RequestBody Orders orders) {
         String ordersId = ordersService.insertOrders(orders);
-        return success(ordersId);
+        return AjaxResult.success((Object) ordersId);
     }
 
     /**
@@ -140,48 +145,13 @@ public class OrdersController extends BaseController {
     @PutMapping("/payment/{ordersIds}")
     @Transactional
     public AjaxResult payment(@PathVariable String[] ordersIds) {
-        //拿到每一个订单号
-        for (String ordersId : ordersIds) {
-            //根据每一个订单号查询对应的订单产品列表
-            List<OrdersProducts> ordersProductsList = ordersService.selectOrdersByOrdersId(ordersId).getOrdersProductsList();
-
-            for (OrdersProducts ordersProducts : ordersProductsList) {
-                //拿到每一个产品ID
-                String productsId = ordersProducts.getProductsId();
-
-                //拿到每一个购买数量
-                Long quantity = ordersProducts.getQuantity();
-
-                //拿到产品此前的库存
-                BigDecimal inventory = productsService.selectProductsByProductsId(productsId).getInventory();
-
-                //将对应的产品库存减去购买的数量并提交更改
-                Products products = new Products();
-                products.setProductsId(productsId);
-                products.setInventory(BigDecimal.valueOf(inventory.doubleValue() - quantity));
-                productsService.updateProducts(products);
-            }
-
-
-            //根据订单号查询订单信息
-            Orders orders = ordersService.selectOrdersByOrdersId(ordersId);
-
-            //拿到订单金额
-            BigDecimal totalPrice = orders.getTotalPrice();
-
-            //拿到订单所属的农户的用户ID
-            Long productsUserId = orders.getProductsUserId();
-
-            //给农户增加账户余额
-            sysUserService.updateUserBalance(productsUserId, "increase", totalPrice.doubleValue());
-
-            //将每一个订单状态更改为待发货
-            Orders updateOrders = new Orders();
-            updateOrders.setOrdersId(ordersId);
-            updateOrders.setStatus("待发货");
-            ordersService.updateOrders(updateOrders);
+        if (!SecurityUtils.isAdmin(getUserId())) {
+            return AjaxResult.error("仅管理员可使用手动支付接口");
         }
-        return AjaxResult.success();
+        for (String ordersId : ordersIds) {
+            payService.markOrderPaid(ordersId);
+        }
+        return AjaxResult.success("手动支付补单处理成功");
     }
 
     /**

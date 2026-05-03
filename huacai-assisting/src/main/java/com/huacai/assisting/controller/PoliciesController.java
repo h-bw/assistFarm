@@ -20,6 +20,7 @@ import java.io.InputStream;
 import org.springframework.web.multipart.MultipartFile;
 import com.huacai.assisting.domain.Policies;
 import com.huacai.assisting.service.IPoliciesService;
+import com.huacai.common.annotation.Anonymous;
 import com.huacai.common.utils.poi.ExcelUtil;
 import com.huacai.common.core.page.TableDataInfo;
 
@@ -39,6 +40,7 @@ public class PoliciesController extends BaseController
     /**
      * 查询助农政策列表
      */
+    @Anonymous
     @GetMapping("/list")
     public TableDataInfo list(Policies policies)
     {
@@ -87,6 +89,7 @@ public class PoliciesController extends BaseController
     /**
      * 获取助农政策详细信息
      */
+    @Anonymous
     @GetMapping(value = "/{policiesId}")
     public AjaxResult getInfo(@PathVariable("policiesId") String policiesId)
     {

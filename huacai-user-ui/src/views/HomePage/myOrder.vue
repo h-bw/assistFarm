@@ -1,700 +1,942 @@
 <template>
-  <!-- 订单容器 -->
-    <div class="order-container">
-        <!-- 订单状态筛选区域 -->
-        <div class="order-filter">
-            <el-tabs v-model="activeStatus" @tab-change="fetchOrders">
-                <!-- 遍历合并后的订单状态选项生成标签页 -->
-                <el-tab-pane
-                        v-for="dict in combinedOrderStatus"
-                        :key="dict.name"
-                        :label="dict.label"
-                        :name="dict.name">
-                </el-tab-pane>
-            </el-tabs>
+  <div class="order-page">
+    <section class="order-hero">
+      <div>
+        <p class="hero-kicker">订单中心</p>
+        <h1 class="hero-title">查看订单进度与支付状态</h1>
+      </div>
+      <div class="hero-summary">
+        <div class="summary-pill">
+          <span>当前筛选</span>
+          <strong>{{ activeStatus }}</strong>
         </div>
-
-        <!-- 订单列表区域 -->
-        <div class="order-list" v-loading="loading">
-            <!-- 空订单状态显示 -->
-            <div v-if="total === 0" class="empty-order">
-                <el-empty description="暂无订单">
-                    <el-button type="primary" @click="router.push('/index/products')">去逛逛</el-button>
-                </el-empty>
-            </div>
-
-            <!-- 订单项循环 -->
-            <div class="order-item" v-for="order in ordersList" :key="order.ordersId">
-                <!-- 订单头部信息 -->
-                <div class="order-header">
-                    <div class="order-info">
-                        <!-- 订单编号 -->
-                        <span class="order-no">订单号: {{ order.ordersId }}</span>
-                        <!-- 下单时间 -->
-                        <span class="order-time">下单时间: {{ order.createTime }}</span>
-                    </div>
-                    <!-- 订单状态提示 -->
-                    <div class="order-status">
-                        <dict-tag :options="order_status" :value="order.status"/>
-                    </div>
-                </div>
-
-                <!-- 订单产品信息 -->
-                <div class="order-products">
-                    <!-- 遍历订单中的产品 -->
-                    <div class="product-item" v-for="item in order.ordersProductsList" :key="item.opId">
-                        <!-- 产品图片 -->
-                        <img :src="baseUrl + item.image" alt="" class="product-image">
-                        <!-- 产品信息 -->
-                        <div class="product-info">
-                            <div class="product-name">{{ item.productsName }}</div>
-                            <div class="product-farmersName">来自农户: {{ order.farmersName }}</div>
-                            <div class="product-specs">
-                                <span>规格: {{ item.specs }}</span>
-                            </div>
-                        </div>
-                        <!-- 产品单价 -->
-                        <div class="product-price">¥{{ item.price.toFixed(2) }}</div>
-                        <!-- 产品数量 -->
-                        <div class="product-quantity">x{{ item.quantity }}</div>
-                        <!-- 产品小计 -->
-                        <div class="product-subtotal">¥{{ (item.price * item.quantity).toFixed(2) }}</div>
-                    </div>
-                </div>
-
-                <!-- 订单汇总信息 -->
-                <div class="order-summary">
-                    <div class="summary-info">
-                        <!-- 产品总数和总金额 -->
-                        共{{ order.ordersProductsList.length }}件产品 合计:
-                        <span class="total-amount">¥{{ order.totalPrice.toFixed(2) }}</span>
-                    </div>
-                    <!-- 订单操作区域 -->
-                    <div class="order-actions">
-                        <!-- 查看订单详情按钮 -->
-                        <el-button size="small" @click="viewOrderDetail(order.ordersId)">订单详情</el-button>
-                        <!-- 待付款状态下的操作按钮 -->
-                        <template v-if="order.status === '待付款'">
-                            <el-button size="small" @click="cancelOrder(order)">取消订单</el-button>
-                            <el-button type="primary" size="small" @click="confirmPayment(order.ordersId)">去支付
-                            </el-button>
-                        </template>
-                        <!-- 待收货状态下的操作按钮 -->
-                        <template v-else-if="order.status === '待收货'">
-                            <el-button type="primary" size="small" @click="receipt(order)">确认收货</el-button>
-                        </template>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 分页组件 -->
-            <div class="pagination">
-                <pagination
-                        v-show="total>0"
-                        :total="total"
-                        v-model:page="queryParams.pageNum"
-                        v-model:limit="queryParams.pageSize"
-                        @pagination="getList"
-                />
-            </div>
+        <div class="summary-pill">
+          <span>订单数量</span>
+          <strong>{{ total }}</strong>
         </div>
+      </div>
+    </section>
 
-        <!-- 订单详情对话框 -->
-        <vxe-modal title="订单详情" v-model="open" width="700px" show-maximize showFooter resize>
-            <div class="order-detail" v-if="currentOrder">
-                <!-- 订单基本信息区域 -->
-                <div class="detail-section">
-                    <h3>订单信息</h3>
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <span class="detail-label">订单号:</span>
-                            <span class="detail-value">{{ currentOrder.ordersId }}</span>
-                        </div>
-                        <div class="detail-col">
-                            <span class="detail-label">下单时间:</span>
-                            <span class="detail-value">{{ currentOrder.createTime }}</span>
-                        </div>
-                        <div class="detail-col">
-                            <span class="detail-label">订单状态:</span>
-                            <dict-tag :options="order_status" :value="currentOrder.status"/>
-                        </div>
-                    </div>
-                    <!-- 发货时间 (如果有) -->
-                    <div class="detail-row" v-if="currentOrder.shippingTime">
-                        <div class="detail-col">
-                            <span class="detail-label">发货时间:</span>
-                            <span class="detail-value">{{ currentOrder.shippingTime }}</span>
-                        </div>
-                    </div>
-                    <!-- 完成时间 (如果有) -->
-                    <div class="detail-row" v-if="currentOrder.shippingTime">
-                        <div class="detail-col">
-                            <span class="detail-label">完成时间:</span>
-                            <span class="detail-value">{{ currentOrder.completeTime }}</span>
-                        </div>
-                    </div>
-                </div>
+    <section class="order-filter-card">
+      <el-tabs v-model="activeStatus" @tab-change="fetchOrders">
+        <el-tab-pane
+          v-for="dict in combinedOrderStatus"
+          :key="dict.name"
+          :label="dict.label"
+          :name="dict.name"
+        />
+      </el-tabs>
+    </section>
 
-                <!-- 收货信息区域 -->
-                <div class="detail-section">
-                    <h3>收货信息</h3>
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <span class="detail-label">收货人:</span>
-                            <span class="detail-value">{{ currentOrder.name }}</span>
-                        </div>
-                        <div class="detail-col">
-                            <span class="detail-label">联系电话:</span>
-                            <span class="detail-value">{{ currentOrder.phone }}</span>
-                        </div>
-                    </div>
-                    <div class="detail-row">
-                        <div class="detail-col">
-                            <span class="detail-label">收货地址:</span>
-                            <span class="detail-value">{{ currentOrder.address }}</span>
-                        </div>
-                    </div>
-                </div>
+    <section class="order-list-card" v-loading="loading">
+      <div v-if="total === 0" class="empty-order">
+        <div class="empty-state-card">
+          <el-empty description="暂无订单">
+            <template #description>
+              <div class="empty-state-text">
+                <strong>你还没有产生订单</strong>
+                <p>可以先去浏览产品，并完成加入购物车、下单与支付流程。</p>
+              </div>
+            </template>
+            <el-button type="primary" @click="router.push('/index/products')">去逛逛</el-button>
+          </el-empty>
+        </div>
+      </div>
 
-                <!-- 产品信息区域 -->
-                <div class="detail-section">
-                    <h3>产品信息</h3>
-                    <div class="detail-products">
-                        <!-- 遍历产品信息 -->
-                        <div class="product-item" v-for="item in currentOrder.ordersProductsList" :key="item.opId">
-                            <img :src="baseUrl + item.image" alt="" class="product-image">
-                            <!-- 产品信息 -->
-                            <div class="product-info">
-                                <div class="product-name">{{ item.productsName }}</div>
-                                <div class="product-specs">
-                                    <span>规格: {{ item.specs }}</span>
-                                </div>
-                            </div>
-                            <!-- 产品单价 -->
-                            <div class="product-price">¥{{ item.price.toFixed(2) }}</div>
-                            <!-- 产品数量 -->
-                            <div class="product-quantity">x{{ item.quantity }}</div>
-                            <!-- 产品小计 -->
-                            <div class="product-subtotal">¥{{ (item.price * item.quantity).toFixed(2) }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 订单金额区域 -->
-                <div class="detail-section">
-                    <h3>订单金额</h3>
-                    <div class="detail-amount">
-                        <div class="amount-row">
-                            <span>产品总价: </span>
-                            <span class="amount-value">¥{{ currentOrder.totalPrice.toFixed(2) }}</span>
-                        </div>
-                    </div>
-                </div>
-
+      <div v-else class="order-list">
+        <article class="order-item" v-for="order in ordersList" :key="order.ordersId">
+          <header class="order-header">
+            <div class="order-header-main">
+              <div class="order-number">订单号：{{ order.ordersId }}</div>
+              <div class="order-time">下单时间：{{ order.createTime }}</div>
             </div>
-        </vxe-modal>
+            <div class="order-status">
+              <dict-tag :options="order_status" :value="order.status" />
+            </div>
+          </header>
 
-    </div>
+          <div class="order-products">
+            <div class="product-row" v-for="item in order.ordersProductsList" :key="item.opId">
+              <img :src="resolveImageUrl(item.image)" :alt="item.productsName" class="product-image" />
+              <div class="product-info">
+                <div class="product-name">{{ item.productsName }}</div>
+                <div class="product-farmer">来自农户：{{ order.farmersName }}</div>
+                <div class="product-specs">规格：{{ item.specs }}</div>
+              </div>
+              <div class="product-data">
+                <span class="product-price">¥{{ Number(item.price).toFixed(2) }}</span>
+                <span class="product-quantity">x{{ item.quantity }}</span>
+                <span class="product-subtotal">小计 ¥{{ (Number(item.price) * Number(item.quantity)).toFixed(2) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <footer class="order-footer">
+            <div class="order-total">
+              共 {{ order.ordersProductsList.length }} 件商品
+              <span class="total-amount">¥{{ Number(order.totalPrice).toFixed(2) }}</span>
+            </div>
+            <div class="order-actions">
+              <el-button size="small" @click="viewOrderDetail(order.ordersId)">订单详情</el-button>
+              <template v-if="order.status === '待付款'">
+                <el-button size="small" @click="cancelOrder(order)">取消订单</el-button>
+                <el-button type="primary" size="small" @click="confirmPayment(order.ordersId)">去支付</el-button>
+              </template>
+              <template v-else-if="order.status === '待收货'">
+                <el-button type="primary" size="small" @click="receipt(order)">确认收货</el-button>
+              </template>
+            </div>
+          </footer>
+        </article>
+      </div>
+
+      <div class="pagination-wrap">
+        <pagination
+          v-show="total > 0"
+          :total="total"
+          v-model:page="queryParams.pageNum"
+          v-model:limit="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
+    </section>
+
+    <Recommend
+      :userId="loginUser.id"
+      :topN="4"
+      scene="buy_again"
+      title="再次购买推荐"
+      kicker="复购推荐"
+      description="结合历史订单频次与最近购买记录，优先展示更适合再次下单的助农商品。"
+    />
+
+    <vxe-modal title="订单详情" v-model="open" width="760px" show-maximize showFooter resize>
+      <div class="order-detail" v-if="currentOrder">
+        <section class="detail-section">
+          <h3>订单信息</h3>
+          <div class="detail-grid">
+            <div class="detail-card">
+              <span>订单号</span>
+              <strong>{{ currentOrder.ordersId }}</strong>
+            </div>
+            <div class="detail-card">
+              <span>下单时间</span>
+              <strong>{{ currentOrder.createTime }}</strong>
+            </div>
+            <div class="detail-card">
+              <span>订单状态</span>
+              <strong>{{ currentOrder.status }}</strong>
+            </div>
+            <div class="detail-card" v-if="currentOrder.shippingTime">
+              <span>发货时间</span>
+              <strong>{{ currentOrder.shippingTime }}</strong>
+            </div>
+            <div class="detail-card" v-if="currentOrder.completeTime">
+              <span>完成时间</span>
+              <strong>{{ currentOrder.completeTime }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-section">
+          <h3>收货信息</h3>
+          <div class="detail-grid">
+            <div class="detail-card">
+              <span>收货人</span>
+              <strong>{{ currentOrder.name }}</strong>
+            </div>
+            <div class="detail-card">
+              <span>联系电话</span>
+              <strong>{{ currentOrder.phone }}</strong>
+            </div>
+            <div class="detail-card detail-card-wide">
+              <span>收货地址</span>
+              <strong>{{ currentOrder.address }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-section">
+          <h3>商品信息</h3>
+          <div class="detail-products">
+            <div class="detail-product-row" v-for="item in currentOrder.ordersProductsList" :key="item.opId">
+              <img :src="resolveImageUrl(item.image)" :alt="item.productsName" class="detail-product-image" />
+              <div class="detail-product-info">
+                <div class="detail-product-name">{{ item.productsName }}</div>
+                <div class="detail-product-specs">规格：{{ item.specs }}</div>
+              </div>
+              <div class="detail-product-price">¥{{ Number(item.price).toFixed(2) }}</div>
+              <div class="detail-product-price">x{{ item.quantity }}</div>
+              <div class="detail-product-total">¥{{ (Number(item.price) * Number(item.quantity)).toFixed(2) }}</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-section amount-section">
+          <h3>订单金额</h3>
+          <div class="amount-box">
+            <div class="amount-row">
+              <span>商品总价</span>
+              <strong>¥{{ Number(currentOrder.totalPrice).toFixed(2) }}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="open = false">关闭</el-button>
+        </div>
+      </template>
+    </vxe-modal>
+  </div>
 </template>
 
 <script setup>
-import useUserStore from "@/store/modules/user.js";
-import {listOrders, payment, updateOrders} from "@/api/assisting/orders.js";
-import {useRouter} from "vue-router";
-import {ElLoading, ElMessage, ElMessageBox} from "element-plus";
+import { computed, getCurrentInstance, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import useUserStore from '@/store/modules/user.js'
+import { getOrders, listOrders, updateOrders, queryPaymentStatus } from '@/api/assisting/orders.js'
+import { delCart } from '@/api/assisting/cart.js'
+import { useCartStore } from '@/store/modules/cart.js'
+import Recommend from '@/components/Recommend/index.vue'
+import { resolveImageUrl as resolveAssetImageUrl } from '@/utils/image.js'
 
 const router = useRouter()
-const {proxy} = getCurrentInstance()
-const {order_status} = proxy.useDict('order_status')
+const route = useRoute()
+const { proxy } = getCurrentInstance()
+const { order_status } = proxy.useDict('order_status')
 const baseUrl = import.meta.env.VITE_APP_BASE_API
+const backendUrl = (import.meta.env.VITE_APP_BACKEND_URL || window.location.origin).replace(/\/$/, '')
+const CART_CLEANUP_STORAGE_KEY = 'pendingCheckoutCartCleanup'
+const CART_CLEANUP_TTL = 1000 * 60 * 60 * 24
+const resolveImageUrl = image => resolveAssetImageUrl(image, baseUrl)
 
-//是否打开对话框
 const open = ref(false)
-
-//当前选中的订单详情
 const currentOrder = ref(null)
-
-//查看订单详情的方法
-const viewOrderDetail = (ordersId) => {
-    //从订单列表中查找对应的订单
-    currentOrder.value = ordersList.value.find(order => order.ordersId === ordersId)
-    //打开对话框
-    open.value = true
-}
-
-//订单状态筛选参数
 const activeStatus = ref('全部订单')
-
-// 计算属性：合并字典数据，添加"全部订单"选项
-const combinedOrderStatus = computed(() => [
-    {label: "全部订单", name: "全部订单"}, // 手动添加
-    ...(order_status.value || []).map(item => ({
-        label: item.label,
-        value: item.value,
-        name: item.value
-    }))
-])
-
-//根据订单状态查询列表数据
-const fetchOrders = () => {
-    // 设置查询参数中的状态
-    queryParams.value.status = activeStatus.value
-    //获取列表
-    getList()
-}
-
-//确认收货方法
-const receipt = (order) => {
-    ElMessageBox.confirm(
-        '确认收到产品了吗?',
-        '提示',
-        {confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning',}
-    )
-        .then(() => {
-            //构建更新数据
-            const item = {
-                ordersId: order.ordersId,
-                status: '已完成',
-                completeTime: new Date().getTime()
-            }
-            //调用api更新订单状态
-            updateOrders(item).then(res => {
-                //刷新列表
-                getList()
-                //显示成功提示
-                ElMessage({type: 'success', message: '确认收货成功~',})
-            })
-        })
-        .catch(() => {
-            //用户取消操作
-        })
-}
-
-//支付订单
-const confirmPayment = (ordersId) => {
-    ElMessageBox.confirm(
-        `确认支付该订单吗`,
-        '提示',
-        {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning',
-        }
-    )
-        .then(() => {
-            //打开加载状态
-            const loading = ElLoading.service({
-                lock: true,
-                text: '支付中...',
-                background: 'rgba(0, 0, 0, 0.7)',
-            })
-            //调用支付api进行支付
-            payment(ordersId).then(res => {
-                //提示支付成功
-                ElMessage({type: 'success', message: '支付成功~',})
-                //刷新列表
-                getList()
-                //关闭加载状态
-                loading.close()
-            })
-        })
-        .catch(() => {
-            ElMessage({type: 'info', message: '取消支付',})
-        })
-}
-
-//取消订单方法
-const cancelOrder = (order) => {
-    ElMessageBox.confirm(
-        '确定要取消该订单吗?',
-        '提示',
-        {confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning',}
-    )
-        .then(() => {
-            //构建更新数据
-            const item = {
-                ordersId: order.ordersId,
-                status: '已取消',
-            }
-            //调用api更新订单状态
-            updateOrders(item).then(res => {
-                //刷新列表
-                getList()
-                //显示成功提示
-                ElMessage({type: 'success', message: '已取消订单',})
-            })
-        })
-        .catch(() => {
-            //用户取消操作
-        })
-}
-
-//加载状态
 const loading = ref(false)
 
-//当前用户的信息
 const loginUser = useUserStore()
+const cartStore = useCartStore()
 
-//查询参数
 const queryParams = ref({
-    pageNum: 1,
-    pageSize: 10,
-    ordersId: null,
-    status: '全部订单',
-    userId: loginUser.id
+  pageNum: 1,
+  pageSize: 10,
+  ordersId: null,
+  status: '全部订单',
+  userId: loginUser.id
 })
 
-//列表数据总数
 const total = ref(0)
-
-//订单列表数据
 const ordersList = ref([])
 
-// 获取我的订单列表
-const getList = () => {
-    //打开加载状态
-    loading.value = true
-    //如果状态是全部订单, 则设置null查询所有状态
-    if (queryParams.value.status === '全部订单') {
-        queryParams.value.status = null
+const combinedOrderStatus = computed(() => [
+  { label: '全部订单', name: '全部订单' },
+  ...(order_status.value || []).map(item => ({
+    label: item.label,
+    value: item.value,
+    name: item.value
+  }))
+])
+
+const readPendingCartCleanup = () => {
+  const raw = localStorage.getItem(CART_CLEANUP_STORAGE_KEY)
+  if (!raw) {
+    return null
+  }
+  try {
+    const parsed = JSON.parse(raw)
+    const normalizedUserId = String(loginUser.id || '')
+    const normalizedOrderIds = Array.isArray(parsed?.orderIds) ? parsed.orderIds.filter(Boolean).map(item => String(item)) : []
+    const normalizedCartIds = Array.isArray(parsed?.cartIds) ? parsed.cartIds.filter(Boolean).map(item => String(item)) : []
+    const isInvalid =
+      normalizedOrderIds.length === 0 ||
+      normalizedCartIds.length === 0 ||
+      !normalizedUserId ||
+      String(parsed?.userId || '') !== normalizedUserId
+    const expiresAt = Number(parsed?.expiresAt || (Number(parsed?.savedAt || 0) + CART_CLEANUP_TTL))
+    const isExpired = expiresAt < Date.now()
+    if (isInvalid || isExpired) {
+      localStorage.removeItem(CART_CLEANUP_STORAGE_KEY)
+      return null
     }
-    //调用api获取订单列表
-    listOrders(queryParams.value).then(res => {
-        //设置总数
-        total.value = res.total
-        //设置订单列表数据
-        ordersList.value = res.rows
-        //关闭加载状态
-        loading.value = false
-    })
+    return {
+      ...parsed,
+      userId: normalizedUserId,
+      orderIds: normalizedOrderIds,
+      cartIds: normalizedCartIds
+    }
+  } catch (error) {
+    localStorage.removeItem(CART_CLEANUP_STORAGE_KEY)
+    return null
+  }
 }
 
-//组件挂载时调用
-onMounted(() => {
-    getList()
+const clearPendingCartCleanup = () => {
+  localStorage.removeItem(CART_CLEANUP_STORAGE_KEY)
+  cartStore.clearCheckoutItems()
+}
+
+const finalizePendingCartCleanup = async (orderId) => {
+  const pending = readPendingCartCleanup()
+  const normalizedOrderId = String(orderId || '')
+  if (!pending || !normalizedOrderId || !pending.orderIds.includes(normalizedOrderId)) {
+    return
+  }
+  const cartIds = pending.cartIds.filter(Boolean)
+  if (cartIds.length > 0) {
+    await delCart(cartIds.join(','))
+  }
+  clearPendingCartCleanup()
+}
+
+const shouldCleanupByStatus = (status) => {
+  return ['待发货', '待收货', '已完成'].includes(String(status || ''))
+}
+
+const recoverPendingCartCleanup = async () => {
+  const pending = readPendingCartCleanup()
+  if (!pending || ordersList.value.length === 0) {
+    return
+  }
+  const matchedPaidOrder = ordersList.value.find(order =>
+    pending.orderIds.includes(String(order.ordersId || '')) && shouldCleanupByStatus(order.status)
+  )
+  if (!matchedPaidOrder) {
+    return
+  }
+  await finalizePendingCartCleanup(String(matchedPaidOrder.ordersId))
+}
+
+const resolvePaidOrderByStatus = async (orderId) => {
+  if (!orderId) {
+    return false
+  }
+  const result = await getOrders(String(orderId))
+  return shouldCleanupByStatus(result?.data?.status)
+}
+
+const viewOrderDetail = ordersId => {
+  currentOrder.value = ordersList.value.find(order => order.ordersId === ordersId)
+  open.value = true
+}
+
+const fetchOrders = () => {
+  queryParams.value.pageNum = 1
+  queryParams.value.status = activeStatus.value
+  getList()
+}
+
+const syncPaymentReturn = async () => {
+  const orderId = Array.isArray(route.query.orderId) ? route.query.orderId[0] : route.query.orderId
+  if (!orderId) {
+    return
+  }
+
+  try {
+    const result = await queryPaymentStatus(String(orderId))
+    const payState = String(result?.data || '')
+    if (payState === 'paid' || await resolvePaidOrderByStatus(orderId)) {
+      await finalizePendingCartCleanup(String(orderId))
+      ElMessage.success('支付成功，购物车已更新')
+      return
+    }
+    ElMessage.warning('支付尚未完成，购物车商品已保留')
+  } catch (error) {
+    try {
+      if (await resolvePaidOrderByStatus(orderId)) {
+        await finalizePendingCartCleanup(String(orderId))
+        ElMessage.success('支付成功，购物车已更新')
+        return
+      }
+    } catch (statusError) {
+      console.error('回跳后补查订单状态失败:', statusError)
+    }
+    console.error('同步支付结果失败:', error)
+  } finally {
+    await router.replace({ path: route.path })
+  }
+}
+
+const receipt = order => {
+  ElMessageBox.confirm('确认收到产品了吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    const item = {
+      ordersId: order.ordersId,
+      status: '已完成',
+      completeTime: new Date().getTime()
+    }
+    updateOrders(item).then(() => {
+      getList()
+      ElMessage({ type: 'success', message: '确认收货成功~' })
+    })
+  }).catch(() => {})
+}
+
+const confirmPayment = (ordersId, skipConfirm = false) => {
+  const doPay = () => {
+    const payUrl = `${backendUrl}/api/pay/${ordersId}`
+    fetch(payUrl, { method: 'GET', credentials: 'omit' })
+      .then(async res => {
+        const text = await res.text()
+        if (!res.ok) {
+          throw new Error(extractPayError(text) || `支付接口请求失败：${res.status}`)
+        }
+        return text
+      })
+      .then(html => {
+        const container = document.createElement('div')
+        container.innerHTML = html
+        container.querySelectorAll('script').forEach(s => s.remove())
+        const sourceForm = container.querySelector('form')
+        if (!sourceForm) throw new Error(extractPayError(html) || '支付表单解析失败')
+        const action = sourceForm.getAttribute('action') || ''
+        if (!/alipay/i.test(action)) {
+          throw new Error('支付网关地址异常，请稍后重试')
+        }
+        const sourceInputs = Array.from(sourceForm.querySelectorAll('input'))
+        const hasBizContent = sourceInputs.some(input => input.name === 'biz_content' && String(input.value || '').trim())
+        if (!hasBizContent) {
+          throw new Error('支付参数缺失（biz_content），请稍后重试')
+        }
+        const form = document.createElement('form')
+        form.method = 'post'
+        form.action = action
+        form.acceptCharset = 'UTF-8'
+        sourceInputs.forEach(input => {
+          const hidden = document.createElement('input')
+          hidden.type = 'hidden'
+          hidden.name = input.name
+          hidden.value = input.value
+          form.appendChild(hidden)
+        })
+        document.body.appendChild(form)
+        form.submit()
+      })
+      .catch(err => {
+        showPayErrorWithRetry(err, () => confirmPayment(ordersId, true))
+      })
+  }
+  if (skipConfirm) {
+    doPay()
+    return
+  }
+  ElMessageBox.confirm('确认支付该订单吗', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    doPay()
+  }).catch(() => {
+    ElMessage({ type: 'info', message: '取消支付' })
+  })
+}
+
+const extractPayError = (raw) => {
+  if (!raw) return ''
+  const text = String(raw)
+  const match = text.match(/\"msg\"\s*:\s*\"([^\"]+)\"/)
+  if (match && match[1]) return match[1]
+  const htmlTitle = text.match(/<title>([^<]+)<\/title>/i)
+  if (htmlTitle && htmlTitle[1]) return htmlTitle[1]
+  if (text.includes('订单已支付')) return '订单已支付，无需重复支付'
+  if (text.includes('订单已取消')) return '订单已取消，无法发起支付'
+  if (text.includes('订单金额异常')) return '订单金额异常，请刷新后重试'
+  if (text.includes('支付配置不完整')) return '支付配置不完整，请联系管理员'
+  if (text.includes('SYSTEM_ERROR')) return '支付宝沙箱系统繁忙，请稍后再试'
+  if (text.includes('unable to handle this request')) return '支付宝沙箱页面暂不可用，请稍后重试'
+  if (text.includes('支付网关预检查失败')) return text
+  return ''
+}
+
+const showPayErrorWithRetry = (err, retryAction) => {
+  const rawMessage = String(err?.message || err || '未知错误')
+  const refined = extractPayError(rawMessage) || rawMessage
+  const isSandboxAbnormal = /SYSTEM_ERROR|unable to handle this request|沙箱|alipaydev/i.test(rawMessage)
+  if (!isSandboxAbnormal) {
+    ElMessage.error('支付跳转失败：' + refined)
+    return
+  }
+  ElMessageBox.confirm(
+    `检测到支付宝沙箱可能异常：${refined}\n\n建议切换无痕窗口或稍后重试。是否立即重试支付？`,
+    '支付提示',
+    {
+      confirmButtonText: '立即重试',
+      cancelButtonText: '稍后再试',
+      type: 'warning'
+    }
+  ).then(() => {
+    retryAction()
+  }).catch(() => {})
+}
+
+const cancelOrder = order => {
+  ElMessageBox.confirm('确定要取消该订单吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    const item = {
+      ordersId: order.ordersId,
+      status: '已取消'
+    }
+    updateOrders(item).then(() => {
+      getList()
+      ElMessage({ type: 'success', message: '已取消订单' })
+    })
+  }).catch(() => {})
+}
+
+const getList = () => {
+  loading.value = true
+  const params = {
+    ...queryParams.value,
+    status: queryParams.value.status === '全部订单' ? null : queryParams.value.status
+  }
+  listOrders(params).then(res => {
+    total.value = res.total
+    ordersList.value = res.rows
+    return recoverPendingCartCleanup()
+  }).finally(() => {
+    loading.value = false
+  })
+}
+
+onMounted(async () => {
+  await syncPaymentReturn()
+  getList()
 })
 </script>
 
 <style scoped>
-/* 订单容器样式 */
-.order-container {
-    max-width: 1200px; /* 最大宽度 */
-    margin: 0 auto; /* 水平居中 */
-    padding: 20px; /* 内边距 */
+.order-page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
 }
 
-/* 订单筛选区域样式 */
-.order-filter {
-    background-color: #fff; /* 背景色 */
-    padding: 15px 20px; /* 内边距 */
-    margin-bottom: 20px; /* 下边距 */
-    border-radius: 8px; /* 圆角 */
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影效果 */
+.order-hero,
+.order-filter-card,
+.order-list-card {
+  border: 1px solid rgba(102, 151, 83, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 40px rgba(31, 72, 42, 0.07);
 }
 
-/* 订单列表区域样式 */
-.order-list {
-    background-color: #fff; /* 背景色 */
-    padding: 20px; /* 内边距 */
-    border-radius: 8px; /* 圆角 */
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影效果 */
+.order-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 28px 30px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top left, rgba(92, 160, 102, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(249, 253, 248, 0.96), rgba(255, 255, 255, 0.96));
 }
 
-/* 空订单状态样式 */
+.hero-kicker {
+  margin: 0 0 8px;
+  color: #2f8850;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hero-title {
+  margin: 0 0 10px;
+  font-size: 34px;
+  color: #1c3b28;
+}
+
+.hero-summary {
+  display: flex;
+  gap: 14px;
+}
+
+.summary-pill {
+  min-width: 128px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(106, 156, 88, 0.14);
+}
+
+.summary-pill span {
+  display: block;
+  color: #768b7f;
+  font-size: 12px;
+}
+
+.summary-pill strong {
+  display: block;
+  margin-top: 6px;
+  color: #254632;
+  font-size: 20px;
+}
+
+.order-filter-card {
+  margin-bottom: 20px;
+  padding: 8px 20px 0;
+  border-radius: 22px;
+}
+
+:deep(.order-filter-card .el-tabs__nav-wrap::after) {
+  display: none;
+}
+
+:deep(.order-filter-card .el-tabs__item) {
+  height: 46px;
+  font-weight: 600;
+}
+
+.order-list-card {
+  padding: 22px;
+  border-radius: 26px;
+}
+
 .empty-order {
-    padding: 50px 0; /* 上下内边距 */
+  padding: 50px 0;
 }
 
-/* 单个订单项样式 */
+.empty-state-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px dashed rgba(102, 151, 83, 0.24);
+  background: rgba(248, 252, 247, 0.74);
+}
+
+.empty-state-text strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #264432;
+  font-size: 18px;
+}
+
+.empty-state-text p {
+  margin: 0;
+  color: #6f8177;
+  line-height: 1.8;
+}
+
+.order-list {
+  display: grid;
+  gap: 18px;
+}
+
 .order-item {
-    margin-bottom: 20px; /* 下边距 */
-    border: 1px solid #eee; /* 边框 */
-    border-radius: 4px; /* 圆角 */
-    overflow: hidden; /* 溢出隐藏 */
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid #e7efe8;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%);
 }
 
-/* 最后一个订单项取消下边距 */
-.order-item:last-child {
-    margin-bottom: 0;
+.order-header,
+.order-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
 }
 
-/* 订单头部样式 */
 .order-header {
-    display: flex; /* 弹性布局 */
-    justify-content: space-between; /* 两端对齐 */
-    align-items: center; /* 垂直居中 */
-    padding: 15px; /* 内边距 */
-    background-color: #f9f9f9; /* 背景色 */
-    border-bottom: 1px solid #eee; /* 底部边框 */
+  border-bottom: 1px solid #edf2ee;
+  background: rgba(246, 250, 245, 0.9);
 }
 
-/* 订单信息区域样式 */
-.order-info {
-    display: flex; /* 弹性布局 */
-    align-items: center; /* 垂直居中 */
+.order-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
 }
 
-/* 订单编号样式 */
-.order-no {
-    margin-right: 20px; /* 右边距 */
-    font-size: 14px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
+.order-number {
+  color: #233a2a;
+  font-weight: 700;
 }
 
-/* 订单时间样式 */
 .order-time {
-    font-size: 13px; /* 字体大小 */
-    color: #999; /* 字体颜色 */
+  color: #6f8378;
+  font-size: 13px;
 }
 
-/* 订单状态标签样式 */
-.order-status .el-tag {
-    font-size: 13px; /* 字体大小 */
-}
-
-/* 订单商品区域样式 */
 .order-products {
-    padding: 15px; /* 内边距 */
+  padding: 8px 22px;
 }
 
-/* 单个商品项样式 */
-.product-item {
-    display: flex; /* 弹性布局 */
-    align-items: center; /* 垂直居中 */
-    padding: 10px 0; /* 上下内边距 */
+.product-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
 }
 
-/* 商品项之间添加分隔线 */
-.product-item:not(:last-child) {
-    border-bottom: 1px dashed #eee; /* 底部虚线边框 */
+.product-row:not(:last-child) {
+  border-bottom: 1px dashed #e5ece6;
 }
 
-/* 商品图片样式 */
 .product-image {
-    width: 80px; /* 宽度 */
-    height: 80px; /* 高度 */
-    object-fit: cover; /* 图片填充方式 */
-    margin-right: 15px; /* 右边距 */
-    border-radius: 4px; /* 圆角 */
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(31, 73, 44, 0.08);
 }
 
-/* 商品信息区域样式 */
 .product-info {
-    flex: 1; /* 弹性扩展 */
-    margin-right: 15px; /* 右边距 */
+  flex: 1;
+  min-width: 0;
 }
 
-/* 商品名称样式 */
 .product-name {
-    font-size: 14px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
-    margin-bottom: 5px; /* 下边距 */
+  margin-bottom: 8px;
+  color: #203826;
+  font-size: 16px;
+  font-weight: 700;
 }
 
-/* 农户名称样式 */
-.product-farmersName {
-    font-size: 12px; /* 字体大小 */
-    color: #999; /* 字体颜色 */
-    margin-bottom: 5px; /* 下边距 */
-}
-
-/* 商品规格样式 */
+.product-farmer,
 .product-specs {
-    font-size: 12px; /* 字体大小 */
-    color: #999; /* 字体颜色 */
-    margin-bottom: 5px; /* 下边距 */
+  color: #73867b;
+  font-size: 13px;
+  line-height: 1.8;
 }
 
-/* 规格项间距 */
-.product-specs span {
-    margin-right: 8px; /* 右边距 */
+.product-data {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  min-width: 290px;
+  text-align: right;
 }
 
-/* 商品价格、数量和总价样式 */
 .product-price,
-.product-quantity,
+.product-quantity {
+  color: #31493a;
+  font-size: 14px;
+}
+
 .product-subtotal {
-    width: 100px; /* 固定宽度 */
-    text-align: center; /* 文本居中 */
-    font-size: 14px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
+  color: #eb5c3c;
+  font-size: 15px;
+  font-weight: 700;
 }
 
-/* 商品总价样式 */
-.product-subtotal {
-    color: #f56c6c; /* 红色字体 */
-    font-weight: bold; /* 粗体 */
+.order-footer {
+  border-top: 1px solid #edf2ee;
+  background: rgba(249, 251, 248, 0.92);
 }
 
-/* 订单汇总区域样式 */
-.order-summary {
-    display: flex; /* 弹性布局 */
-    justify-content: space-between; /* 两端对齐 */
-    align-items: center; /* 垂直居中 */
-    padding: 15px; /* 内边距 */
-    background-color: #f9f9f9; /* 背景色 */
-    border-top: 1px solid #eee; /* 顶部边框 */
+.order-total {
+  color: #66796e;
+  font-size: 14px;
 }
 
-/* 汇总信息样式 */
-.summary-info {
-    font-size: 14px; /* 字体大小 */
-    color: #666; /* 字体颜色 */
-}
-
-/* 总金额样式 */
 .total-amount {
-    color: #f56c6c; /* 红色字体 */
-    font-weight: bold; /* 粗体 */
-    font-size: 16px; /* 字体大小 */
+  margin-left: 12px;
+  color: #eb5c3c;
+  font-size: 20px;
+  font-weight: 800;
 }
 
-/* 订单操作按钮区域样式 */
 .order-actions {
-    display: flex; /* 弹性布局 */
-    gap: 10px; /* 按钮间距 */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
-/* 分页样式 */
-.pagination {
-    margin-top: 30px; /* 上边距 */
-    text-align: center; /* 文本居中 */
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
 }
 
-/* 订单详情区域样式 */
 .order-detail {
-    padding: 10px; /* 内边距 */
+  padding: 10px 6px 20px;
 }
 
-/* 详情区域样式 */
-.detail-section {
-    margin-bottom: 25px; /* 下边距 */
+.detail-section + .detail-section {
+  margin-top: 24px;
 }
 
-/* 详情区域标题样式 */
 .detail-section h3 {
-    margin: 0 0 15px 0; /* 外边距 */
-    font-size: 16px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
-    padding-bottom: 8px; /* 底部内边距 */
-    border-bottom: 1px solid #eee; /* 底部边框 */
+  margin: 0 0 14px;
+  color: #23422f;
+  font-size: 17px;
 }
 
-/* 详情行样式 */
-.detail-row {
-    display: flex; /* 弹性布局 */
-    margin-bottom: 10px; /* 下边距 */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 }
 
-/* 详情列样式 */
-.detail-col {
-    flex: 1; /* 弹性扩展 */
-    display: flex; /* 弹性布局 */
+.detail-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8fbf7;
+  border: 1px solid rgba(106, 152, 87, 0.12);
 }
 
-/* 详情标签样式 */
-.detail-label {
-    width: 80px; /* 固定宽度 */
-    color: #999; /* 字体颜色 */
-    font-size: 14px; /* 字体大小 */
+.detail-card-wide {
+  grid-column: 1 / -1;
 }
 
-/* 详情值样式 */
-.detail-value {
-    flex: 1; /* 弹性扩展 */
-    font-size: 14px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
+.detail-card span {
+  display: block;
+  margin-bottom: 6px;
+  color: #7a8d83;
+  font-size: 12px;
 }
 
-/* 详情商品区域样式 */
+.detail-card strong {
+  color: #274333;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
 .detail-products {
-    border: 1px solid #eee; /* 边框 */
-    border-radius: 4px; /* 圆角 */
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid #e6ede7;
 }
 
-/* 详情金额区域样式 */
-.detail-amount {
-    width: 300px; /* 固定宽度 */
-    margin-left: auto; /* 左外边距自动，实现右对齐 */
+.detail-product-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 92px 60px 110px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #fff;
 }
 
-/* 金额行样式 */
+.detail-product-row:not(:last-child) {
+  border-bottom: 1px solid #edf2ee;
+}
+
+.detail-product-image {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.detail-product-name {
+  margin-bottom: 6px;
+  color: #223b29;
+  font-weight: 700;
+}
+
+.detail-product-specs {
+  color: #72867b;
+  font-size: 13px;
+}
+
+.detail-product-price {
+  color: #42584b;
+  text-align: right;
+}
+
+.detail-product-total {
+  color: #eb5c3c;
+  font-weight: 700;
+  text-align: right;
+}
+
+.amount-box {
+  margin-left: auto;
+  max-width: 320px;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff6f2, #ffffff);
+  border: 1px solid rgba(234, 123, 79, 0.12);
+}
+
 .amount-row {
-    display: flex; /* 弹性布局 */
-    justify-content: space-between; /* 两端对齐 */
-    margin-bottom: 10px; /* 下边距 */
-    font-size: 14px; /* 字体大小 */
-    color: #666; /* 字体颜色 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6c7b73;
 }
 
-/* 总金额行样式 */
-.amount-row.total {
-    margin-top: 15px; /* 上边距 */
-    padding-top: 10px; /* 顶部内边距 */
-    border-top: 1px solid #eee; /* 顶部边框 */
-    font-size: 15px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
-    font-weight: bold; /* 粗体 */
+.amount-row strong {
+  color: #eb5c3c;
+  font-size: 20px;
 }
 
-/* 金额值样式 */
-.amount-value {
-    color: #f56c6c; /* 红色字体 */
+.dialog-footer {
+  text-align: center;
 }
 
-/* 响应式设计 - 移动端适配 */
+@media (max-width: 992px) {
+  .order-hero,
+  .order-header,
+  .order-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-summary,
+  .order-actions {
+    width: 100%;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .detail-product-row {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .detail-product-price,
+  .detail-product-total {
+    text-align: left;
+  }
+}
+
 @media (max-width: 768px) {
-    /* 移动端订单头部改为垂直布局 */
-    .order-header {
-        flex-direction: column; /* 垂直方向 */
-        align-items: flex-start; /* 左对齐 */
-    }
+  .order-page {
+    padding: 16px 14px 34px;
+  }
 
-    /* 移动端订单状态调整 */
-    .order-status {
-        margin-top: 10px; /* 上边距 */
-    }
+  .order-list-card,
+  .order-filter-card,
+  .order-hero {
+    border-radius: 20px;
+  }
 
-    /* 移动端商品项换行 */
-    .product-item {
-        flex-wrap: wrap; /* 允许换行 */
-    }
+  .hero-title {
+    font-size: 28px;
+  }
 
-    /* 移动端商品信息全宽 */
-    .product-info {
-        width: 100%; /* 全宽 */
-        margin-bottom: 10px; /* 下边距 */
-    }
+  .product-row,
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
 
-    /* 移动端价格数量等调整 */
-    .product-price,
-    .product-quantity,
-    .product-subtotal {
-        width: auto; /* 自动宽度 */
-        margin-right: 15px; /* 右边距 */
-    }
+  .product-data {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+    text-align: left;
+  }
 
-    /* 移动端订单汇总垂直布局 */
-    .order-summary {
-        flex-direction: column; /* 垂直方向 */
-        align-items: flex-end; /* 右对齐 */
-        gap: 15px; /* 元素间距 */
-    }
+  .detail-product-row {
+    grid-template-columns: 1fr;
+  }
 
-    /* 移动端详情行垂直布局 */
-    .detail-row {
-        flex-direction: column; /* 垂直方向 */
-        margin-bottom: 15px; /* 下边距 */
-    }
-
-    /* 移动端详情列调整 */
-    .detail-col {
-        margin-bottom: 8px; /* 下边距 */
-    }
-
-    /* 移动端金额区域全宽 */
-    .detail-amount {
-        width: 100%; /* 全宽 */
-    }
+  .amount-box {
+    max-width: none;
+  }
 }
 </style>

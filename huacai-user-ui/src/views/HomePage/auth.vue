@@ -17,7 +17,7 @@
             <!-- 认证申请头部 -->
             <div class="auth-header">
                 <h2>农户认证申请</h2>
-                <p>通过认证后, 您可以在平台上销售产品, 获得更多销售渠道</p>
+                <p>通过认证后，您可以在平台上发布农产品并进行订单管理。</p>
             </div>
 
             <!-- 步骤条 -->
@@ -100,7 +100,7 @@
                         <el-form-item label="土地证明/承包合同" prop="landProof">
                             <div style="display: block">
                                 <image-upload :limit="3" v-model="form.landProof"/>
-                                <div class="upload-tip">请上传徒弟证明或承包合同照片(最多3张)</div>
+                                <div class="upload-tip">请上传土地证明或承包合同照片（最多3张）</div>
                             </div>
                         </el-form-item>
                         <el-form-item label="农产品照片" prop="productPhotos">
@@ -127,7 +127,7 @@
                 <!-- 第三步: 提交审核 -->
                 <div v-show="activeStep === 2" class="auth-form-section">
                     <div class="review-section">
-                        <h3>请确认您的认证信息</h3>
+                        <h3>请确认认证信息</h3>
 
                         <!-- 信息确认展示 -->
                         <el-descriptions :column="1" border>
@@ -145,7 +145,7 @@
                             <div class="upload-review">
                                 <h4>上传材料预览</h4>
                                 <div class="upload-item">
-                                    <h5>身份证正面</h5>
+                                    <h5>身份证反面</h5>
                                     <div class="preview-images">
                                         <image-upload v-model="form.idCardFront"/>
                                     </div>
@@ -199,7 +199,7 @@
             <div class="status-container">
                 <el-result icon="info" title="认证审核中">
                     <template #extra>
-                        <p>我们已收到您的认证申请, 预计3个工作日内完成审核</p>
+                        <p>我们已收到您的认证申请，预计 3 个工作日内完成审核。</p>
                     </template>
                 </el-result>
             </div>
@@ -210,7 +210,7 @@
             <div class="status-container">
                 <el-result icon="success" title="认证已通过">
                     <template #extra>
-                        <p>恭喜! 您已认证通过</p>
+                        <p>恭喜，您已通过农户认证。</p>
                         <el-button type="primary" @click="toManage">进入农户后台管理</el-button>
                     </template>
                 </el-result>

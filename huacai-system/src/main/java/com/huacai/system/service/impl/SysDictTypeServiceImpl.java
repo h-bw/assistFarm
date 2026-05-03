@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,8 @@ import com.huacai.system.service.ISysDictTypeService;
 @Service
 public class SysDictTypeServiceImpl implements ISysDictTypeService
 {
+    private static final Logger log = LoggerFactory.getLogger(SysDictTypeServiceImpl.class);
+
     @Autowired
     private SysDictTypeMapper dictTypeMapper;
 
@@ -38,7 +42,15 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService
     @PostConstruct
     public void init()
     {
-        loadingDictCache();
+        try
+        {
+            loadingDictCache();
+        }
+        catch (Exception e)
+        {
+            // Allow startup to continue when Redis is temporarily unavailable.
+            log.warn("Redis unavailable during dictionary cache initialization, falling back to database reads.", e);
+        }
     }
 
     /**
@@ -73,15 +85,29 @@ public class SysDictTypeServiceImpl implements ISysDictTypeService
     @Override
     public List<SysDictData> selectDictDataByType(String dictType)
     {
-        List<SysDictData> dictDatas = DictUtils.getDictCache(dictType);
-        if (StringUtils.isNotEmpty(dictDatas))
+        try
         {
-            return dictDatas;
+            List<SysDictData> dictDatas = DictUtils.getDictCache(dictType);
+            if (StringUtils.isNotEmpty(dictDatas))
+            {
+                return dictDatas;
+            }
         }
-        dictDatas = dictDataMapper.selectDictDataByType(dictType);
+        catch (Exception e)
+        {
+            log.warn("Failed to read dictionary [{}] from Redis cache, falling back to database.", dictType, e);
+        }
+        List<SysDictData> dictDatas = dictDataMapper.selectDictDataByType(dictType);
         if (StringUtils.isNotEmpty(dictDatas))
         {
-            DictUtils.setDictCache(dictType, dictDatas);
+            try
+            {
+                DictUtils.setDictCache(dictType, dictDatas);
+            }
+            catch (Exception e)
+            {
+                log.warn("Failed to write dictionary [{}] to Redis cache.", dictType, e);
+            }
             return dictDatas;
         }
         return null;

@@ -1,422 +1,821 @@
-<template>
-  <!-- 首页容器 -->
-    <div class="home-content">
-        <!-- 主要内容区 -->
-        <div class="main-content">
-            <div class="banner-section">
-                <!-- 轮播图 -->
-                <el-carousel
-                        height="500px"
-                        :interval="5000"
-                        arrow="always"
-                        indicator-position="outside"
-                >
-                    <!-- 轮播图项 -->
-                    <el-carousel-item v-for="item in bannerList" :key="item.bannerId">
-                        <!-- 轮播图背景和内容 -->
-                        <div class="banner-item" :style="{ backgroundImage: `url(${item.image})` }">
-                            <!-- 遮罩层, 用于增强文字可读性 -->
-                            <div class="banner-overlay"/>
-                            <!-- 轮播图文字内容 -->
-                            <div class="banner-content">
-                                <h2 class="banner-title">{{ item.title }}</h2>
-                                <p class="banner-description">{{ item.description }}</p>
-                            </div>
-                        </div>
-                    </el-carousel-item>
-                </el-carousel>
+﻿<template>
+  <div class="home-content">
+    <div class="main-content">
+      <section class="banner-section">
+        <el-carousel
+          height="500px"
+          :interval="5000"
+          arrow="always"
+          indicator-position="outside"
+        >
+          <el-carousel-item v-for="item in bannerList" :key="item.bannerId">
+            <div class="banner-item" :style="{ backgroundImage: `url(${item.image})` }">
+              <div class="banner-overlay" />
+              <div class="banner-content">
+                <span class="banner-badge">助农扶贫商城</span>
+                <h2 class="banner-title">{{ item.title }}</h2>
+                <p class="banner-description">{{ item.description }}</p>
+                <div class="banner-actions">
+                  <el-button class="banner-btn banner-btn-primary" type="primary" size="large" @click.stop="goToProducts">
+                    选购助农产品
+                  </el-button>
+                  <el-button class="banner-btn banner-btn-secondary" plain size="large" @click.stop="goToPolicies">
+                    了解扶持政策
+                  </el-button>
+                </div>
+              </div>
             </div>
+          </el-carousel-item>
+        </el-carousel>
+      </section>
 
-            <!-- 扶贫产品展示区域 -->
-            <div class="section product-recommend">
-                <!-- 区域标题和操作 -->
-                <div class="section-header">
-                    <h2 class="section-title">扶贫产品</h2>
-                    <p class="section-subtitle">精选优质扶贫产品, 助力乡村振兴</p>
-                    <!-- 查看更多链接 -->
-                    <el-link type="primary" :underline="false" @click="goToProducts">
-                        查看更多
-                        <el-icon><ArrowRight/></el-icon>
-                    </el-link>
-                </div>
-                <!-- 产品列表 -->
-                <div class="product-list">
-                    <el-row :gutter="20">
-                        <el-col :span="6" v-for="item in productsList" :key="item.productsId">
-                            <!-- 产品卡片, 点击后跳转到详情页 -->
-                            <div class="product-card" @click="goToProductDetail(item.productsId)">
-                                <!-- 产品图片 -->
-                                <div class="product-image">
-                                    <img :src="baseUrl + item.image" alt="">
-                                </div>
-                                <!-- 产品信息 -->
-                                <div class="product-info">
-                                    <h3 class="product-name">{{ item.name }}</h3>
-                                    <p class="product-origin">产地: {{ item.origin }}</p>
-                                    <div class="product-meta">
-                                        <!-- 产品价格 -->
-                                        <div class="product-price">
-                                            <span class="current-price">¥{{ item.price }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </el-col>
-                    </el-row>
-                </div>
-            </div>
+      <section class="value-strip">
+        <div class="value-card">
+          <span class="value-label">源头助农</span>
+          <strong>优选产地与农户资源</strong>
+          <p>围绕特色产地和农户主体组织商品展示，突出助农商城的真实来源与平台可信度。</p>
         </div>
+        <div class="value-card">
+          <span class="value-label">政策联动</span>
+          <strong>同步展示扶持政策信息</strong>
+          <p>将商品展示与助农政策信息联动呈现，便于用户了解补贴、培训、营销等支持方向。</p>
+        </div>
+        <div class="value-card">
+          <span class="value-label">交易闭环</span>
+          <strong>覆盖浏览下单与订单跟踪</strong>
+          <p>围绕商品浏览、订单支付与订单管理构建完整流程，提升商城功能完整性与使用体验。</p>
+        </div>
+      </section>
+
+      <section class="section product-section">
+        <div class="product-header">
+          <div>
+            <p class="section-kicker">精选好货</p>
+            <h2 class="section-title">助农产品</h2>
+            <p class="section-subtitle">
+              精选优质农产品，帮助优质产地与消费者更高效地建立连接。
+            </p>
+          </div>
+          <el-link class="product-link" type="primary" :underline="false" @click="goToProducts">
+            查看更多
+            <el-icon><ArrowRight /></el-icon>
+          </el-link>
+        </div>
+
+        <div class="product-panel">
+          <div class="product-list">
+            <el-row :gutter="20">
+              <el-col :span="6" v-for="item in productsList" :key="item.productsId">
+                <div class="product-card" @click="goToProductDetail(item.productsId)">
+                  <div class="product-image">
+                    <img :src="resolveImageUrl(item.image)" alt="">
+                    <div class="product-tag">产地直连</div>
+                  </div>
+                  <div class="product-info">
+                    <h3 class="product-name">{{ item.name }}</h3>
+                    <p class="product-origin">产地：{{ item.origin || '优质农产基地' }}</p>
+                    <div class="product-meta">
+                      <div class="product-price">
+                        <span class="current-price">¥{{ item.price }}</span>
+                      </div>
+                      <span class="product-action">查看详情</span>
+                    </div>
+                  </div>
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+        </div>
+      </section>
+
+      <section class="section policy-section">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">政策速览</p>
+            <h2 class="section-title">助农政策与扶持信息</h2>
+            <p class="section-subtitle">
+              汇总电商助农、农产品流通、补贴扶持等常见政策方向，提升平台展示的专业度与实用性。
+            </p>
+          </div>
+          <el-link type="primary" :underline="false" @click="goToPolicies">
+            进入政策中心
+            <el-icon><ArrowRight /></el-icon>
+          </el-link>
+        </div>
+
+        <div class="policy-preview" v-if="policiesList.length">
+          <div class="policy-featured" @click="goToPolicy(policiesList[0])">
+            <div class="featured-topline">
+              <span class="featured-badge">{{ policiesList[0].category }}</span>
+              <span class="featured-region">{{ policiesList[0].region }}</span>
+            </div>
+            <h3 class="featured-title">{{ policiesList[0].title }}</h3>
+            <p class="featured-summary">{{ policiesList[0].summary }}</p>
+            <div class="featured-meta">
+              <span>{{ policiesList[0].publisher }}</span>
+              <span>{{ formatDate(policiesList[0].createTime) }}</span>
+            </div>
+          </div>
+
+          <div class="policy-side-list">
+            <div
+              v-for="item in policiesList.slice(1)"
+              :key="item.policiesId"
+              class="policy-mini-card"
+              @click="goToPolicy(item)"
+            >
+              <div class="policy-mini-top">
+                <span class="policy-mini-tag">{{ item.category }}</span>
+                <span class="policy-mini-date">{{ formatDate(item.createTime) }}</span>
+              </div>
+              <h4 class="policy-mini-title">{{ item.title }}</h4>
+              <p class="policy-mini-summary">{{ item.summary }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="policy-empty">
+          <div class="empty-state-card">
+            <el-empty description="暂未查询到政策内容">
+              <template #description>
+                <div class="empty-state-text">
+                  <strong>政策内容暂未加载</strong>
+                  <p>可以先浏览助农产品，或稍后进入政策中心查看更新内容。</p>
+                </div>
+              </template>
+              <el-button type="primary" @click="goToProducts">浏览产品</el-button>
+            </el-empty>
+          </div>
+        </div>
+      </section>
     </div>
+  </div>
 </template>
-
 <script setup>
-import {listBanner} from "@/api/assisting/banner.js";
-import {useRouter} from "vue-router";
-import {ArrowRight} from "@element-plus/icons-vue";
-import {selectList} from "@/api/assisting/products.js";
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ArrowRight } from '@element-plus/icons-vue'
+import { listBanner } from '@/api/assisting/banner.js'
+import { selectList } from '@/api/assisting/products.js'
+import { listPolicies } from '@/api/assisting/policies.js'
 
-//初始化路由
 const router = useRouter()
-
-//跳转到扶贫产品页面
-const goToProducts = () => {
-    router.push('/index/products')
-}
-
-//跳转到产品详情页面
-const goToProductDetail = (productsId) => {
-    router.push(`/index/productDetail/${productsId}`)
-}
-
-//api基础地址
 const baseUrl = import.meta.env.VITE_APP_BASE_API
 
-// 轮播图列表数据
-const bannerList = ref([])
-
-//扶贫产品列表数据
-const productsList = ref([])
-
-//轮播图查询参数
-const bannerQuery = ref({
-    pageNum: 1,
-    pageSize: 5,
-})
-
-//产品列表查询参数
-const productsQuery = ref({
-    pageNum: 1,
-    pageSize: 4,
-})
-
-//查询列表数据
-const getList = () => {
-    listBanner(bannerQuery.value).then(res => {
-        bannerList.value = res.rows
-        bannerList.value.forEach(item => {
-            item.image = baseUrl + item.image
-        })
-    })
-
-    selectList(productsQuery.value).then(res => {
-        productsList.value = res.rows
-    })
+const resolveImageUrl = (image) => {
+  if (!image) return ''
+  const str = String(image)
+  if (/^https?:\/\//i.test(str)) return encodeURI(str)
+  if (str.startsWith('/downloaded-images/')) return encodeURI(str)
+  if (str.startsWith('/.downloaded-images/')) {
+    return encodeURI(str.replace('/.downloaded-images/', '/downloaded-images/'))
+  }
+  return encodeURI(baseUrl + str)
 }
 
-//组件加载时执行方法
+const bannerList = ref([])
+const productsList = ref([])
+const policiesList = ref([])
+
+const bannerQuery = ref({
+  pageNum: 1,
+  pageSize: 5
+})
+
+const productsQuery = ref({
+  pageNum: 1,
+  pageSize: 4
+})
+
+const policiesQuery = ref({
+  pageNum: 1,
+  pageSize: 3
+})
+
+const bannerEnhancements = [
+  {
+    title: '优质农产直连餐桌',
+    description: '依托助农电商平台促进产销衔接，让更多优质农产品从田间地头走向千家万户。'
+  },
+  {
+    title: '消费帮扶助力乡村振兴',
+    description: '围绕消费帮扶与乡村振兴协同发力，拓宽特色农产品销路，带动农户稳定增收。'
+  },
+  {
+    title: '数商兴农激活乡村活力',
+    description: '结合电商推广、品牌展示与线上交易服务，提升农产品流通效率，增强助农服务能力。'
+  }
+]
+
+const decorateBanner = (item, index) => {
+  const enhancement = bannerEnhancements[index]
+  if (!enhancement) {
+    return {
+      ...item,
+      image: baseUrl + item.image
+    }
+  }
+
+  return {
+    ...item,
+    title: enhancement.title,
+    description: enhancement.description,
+    image: baseUrl + item.image
+  }
+}
+
+const goToProducts = () => {
+  router.push('/index/products')
+}
+
+const goToProductDetail = (productsId) => {
+  router.push(`/index/productDetail/${productsId}`)
+}
+
+const goToPolicies = () => {
+  router.push('/index/policies')
+}
+
+const goToPolicy = (policy) => {
+  router.push({
+    path: '/index/policies',
+    query: {
+      title: policy.title,
+      category: policy.category
+    }
+  })
+}
+
+const formatDate = (value) => {
+  if (!value) return '待更新'
+  return String(value).slice(0, 10)
+}
+
+const getList = () => {
+  listBanner(bannerQuery.value).then((res) => {
+    bannerList.value = (res.rows || []).map((item, index) => decorateBanner(item, index))
+  })
+
+  selectList(productsQuery.value).then((res) => {
+    productsList.value = (res.rows || []).map(item => ({
+      ...item,
+      image: resolveImageUrl(item.image)
+    }))
+  })
+
+  listPolicies(policiesQuery.value).then((res) => {
+    policiesList.value = res.rows
+  })
+}
+
 onMounted(() => {
-    getList()
+  getList()
 })
 </script>
 
 <style scoped>
-/* 首页容器样式 */
-.home-container {
-    min-height: 100vh; /* 最小高度为视口高度 */
-    display: flex;
-    flex-direction: column; /* 垂直方向布局 */
-}
-
-/* 主要内容区域样式 */
 .main-content {
-    flex: 1; /* 占据剩余空间 */
-    max-width: 1450px; /* 最大宽度 */
-    margin: 0 auto; /* 水平居中 */
-    padding: 20px; /* 内边距 */
-    width: 100%; /* 宽度100% */
+  width: 100%;
+  max-width: 1450px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
 }
 
-/* 轮播图区域样式 */
 .banner-section {
-    margin-bottom: 60px; /* 底部外边距 */
+  margin-bottom: 56px;
 }
 
-/* 轮播图单项样式 */
+:deep(.banner-section .el-carousel__container) {
+  border-radius: 22px;
+}
+
+:deep(.banner-section .el-carousel__arrow) {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+:deep(.banner-section .el-carousel__indicator-button) {
+  width: 24px;
+  height: 6px;
+  border-radius: 999px;
+}
+
 .banner-item {
-    height: 100%; /* 高度100% */
-    background-size: cover; /* 背景图覆盖整个元素 */
-    background-position: center; /* 背景图居中 */
-    position: relative; /* 相对定位，为子元素定位做准备 */
-    border-radius: 12px; /* 圆角 */
-    overflow: hidden; /* 溢出隐藏 */
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  background-position: center;
+  background-size: cover;
 }
 
-/* 轮播图遮罩层样式 */
 .banner-overlay {
-    position: absolute; /* 绝对定位 */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* 渐变遮罩，增强文字可读性 */
-    background: linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0) 100%);
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(12, 43, 25, 0.82) 0%, rgba(12, 43, 25, 0.45) 42%, rgba(12, 43, 25, 0.1) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(12, 43, 25, 0.14) 100%);
 }
 
-/* 轮播图内容区域样式 */
 .banner-content {
-    position: absolute; /* 绝对定位 */
-    bottom: 100px; /* 距离底部100px */
-    left: 80px; /* 距离左侧80px */
-    color: #fff; /* 文字颜色白色 */
-    max-width: 600px; /* 最大宽度 */
-    z-index: 1; /* 层级，确保在遮罩层之上 */
+  position: absolute;
+  left: 70px;
+  bottom: 74px;
+  z-index: 2;
+  max-width: 620px;
+  color: #fff;
 }
 
-/* 轮播图标题样式 */
+.banner-badge {
+  display: inline-flex;
+  margin-bottom: 18px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
 .banner-title {
-    font-size: 42px; /* 字体大小 */
-    font-weight: 700; /* 字体粗细 */
-    margin-bottom: 20px; /* 底部外边距 */
-    line-height: 1.2; /* 行高 */
+  margin: 0 0 18px;
+  font-size: 44px;
+  line-height: 1.18;
+  font-weight: 700;
 }
 
-/* 轮播图描述样式 */
 .banner-description {
-    font-size: 18px; /* 字体大小 */
-    margin-bottom: 30px; /* 底部外边距 */
-    line-height: 1.6; /* 行高 */
+  margin: 0 0 28px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 17px;
+  line-height: 1.8;
 }
 
-/* 轮播图按钮容器样式 */
-.banner-actions .el-button {
-    margin-right: 15px; /* 右侧外边距 */
-    padding: 12px 30px; /* 内边距 */
+.banner-actions {
+  display: flex;
+  gap: 12px;
 }
 
-/* 产品推荐区域样式 */
-.product-recommend {
-    margin-bottom: 70px; /* 底部外边距 */
+.banner-btn {
+  min-width: 156px;
+  height: 46px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 14px 28px rgba(15, 43, 27, 0.16);
 }
 
-/* 产品列表样式 */
-.product-list {
-    margin-top: 40px; /* 顶部外边距 */
+.banner-btn-primary {
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
-/* 产品卡片样式 */
-.product-card {
-    background-color: #fff; /* 背景色白色 */
-    border-radius: 12px; /* 圆角 */
-    overflow: hidden; /* 溢出隐藏 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* 阴影效果 */
-    transition: all 0.3s ease; /* 过渡效果 */
-    cursor: pointer; /* 鼠标指针样式 */
-    margin-bottom: 10px; /* 底部外边距 */
+.banner-btn-secondary {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(6px);
 }
 
-/* 产品卡片悬停效果 */
-.product-card:hover {
-    transform: translateY(-8px); /* 向上移动 */
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12); /* 增强阴影效果 */
+.banner-btn-secondary:hover,
+.banner-btn-secondary:focus {
+  color: #173924;
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(255, 255, 255, 0.96);
 }
 
-/* 产品图片容器样式 */
-.product-image {
-    position: relative; /* 相对定位 */
-    height: 220px; /* 固定高度 */
-    overflow: hidden; /* 溢出隐藏 */
+.value-strip {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: -24px 0 56px;
 }
 
-/* 产品图片样式 */
-.product-image img {
-    width: 100%; /* 宽度100% */
-    height: 100%; /* 高度100% */
-    object-fit: cover; /* 覆盖整个容器 */
-    transition: transform 0.5s ease; /* 过渡效果 */
+.value-card {
+  padding: 24px 24px 22px;
+  border: 1px solid rgba(103, 150, 85, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 40px rgba(26, 69, 42, 0.08);
+  backdrop-filter: blur(8px);
 }
 
-/* 产品卡片悬停时图片放大效果 */
-.product-card:hover .product-image img {
-    transform: scale(1.08); /* 放大图片 */
+.value-label {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #eef8f0;
+  color: #2d8450;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
-/* 产品信息区域样式 */
-.product-info {
-    padding: 20px; /* 内边距 */
+.value-card strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #1e3c2a;
+  font-size: 22px;
 }
 
-/* 产品名称样式 */
-.product-name {
-    margin: 0 0 10px 0; /* 外边距 */
-    font-size: 18px; /* 字体大小 */
-    font-weight: 600; /* 字体粗细 */
-    color: #333; /* 字体颜色 */
-    white-space: nowrap; /* 不换行 */
-    overflow: hidden; /* 溢出隐藏 */
-    text-overflow: ellipsis; /* 文本溢出显示省略号 */
+.value-card p {
+  margin: 0;
+  color: #667a6d;
+  font-size: 14px;
+  line-height: 1.8;
 }
 
-/* 产品产地样式 */
-.product-origin {
-    margin: 0 0 15px 0; /* 外边距 */
-    font-size: 13px; /* 字体大小 */
-    color: #999; /* 字体颜色 */
-}
-
-/* 产品元信息容器样式 */
-.product-meta {
-    display: flex; /* 弹性布局 */
-    justify-content: space-between; /* 两端对齐 */
-    align-items: center; /* 垂直居中 */
-}
-
-/* 产品价格容器样式 */
-.product-price {
-    display: flex;
-    flex-direction: column; /* 垂直方向布局 */
-}
-
-/* 当前价格样式 */
-.current-price {
-    font-size: 20px; /* 字体大小 */
-    font-weight: 700; /* 字体粗细 */
-    color: #f56c6c; /* 价格颜色（红色系） */
-}
-
-/* 深度选择器，修改Element Plus评分组件样式 */
-:deep(.el-rate__icon) {
-    font-size: 14px; /* 图标大小 */
-}
-
-/* 深度选择器，修改Element Plus评分文本样式 */
-:deep(.el-rate__text) {
-    font-size: 12px; /* 字体大小 */
-    margin-left: 5px; /* 左侧外边距 */
-}
-
-/* 故事图片样式 */
-.story-image img {
-    width: 100%; /* 宽度100% */
-    border-radius: 12px; /* 圆角 */
-}
-
-/* 故事内容区域标题样式 */
-.story-content .section-title {
-    margin-bottom: 20px; /* 底部外边距 */
-    color: #333; /* 字体颜色 */
-}
-
-/* 评论作者信息样式 */
-.review-author h4 {
-    margin: 0 0 5px 0; /* 外边距 */
-    font-size: 18px; /* 字体大小 */
-    color: #333; /* 字体颜色 */
-}
-
-.review-author p {
-    margin: 0; /* 外边距清零 */
-    font-size: 14px; /* 字体大小 */
-    color: #999; /* 字体颜色 */
-}
-
-/* 通用区域样式 */
 .section {
-    margin-bottom: 50px; /* 底部外边距 */
+  margin-bottom: 56px;
 }
 
-/* 区域头部样式 */
+.product-section,
+.policy-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.product-section {
+  padding-top: 10px;
+}
+
 .section-header {
-    text-align: center; /* 文本居中 */
-    margin-bottom: 40px; /* 底部外边距 */
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
 }
 
-/* 区域标题样式 */
+.section-kicker {
+  margin: 0 0 8px;
+  color: #2b8a52;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
 .section-title {
-    font-size: 32px; /* 字体大小 */
-    font-weight: 700; /* 字体粗细 */
-    color: #333; /* 字体颜色 */
-    margin: 0 0 15px 0; /* 外边距 */
+  margin: 0 0 10px;
+  color: #213547;
+  font-size: 32px;
+  line-height: 1.2;
 }
 
-/* 区域副标题样式 */
 .section-subtitle {
-    font-size: 16px; /* 字体大小 */
-    color: #666; /* 字体颜色 */
-    margin: 0; /* 外边距清零 */
+  margin: 0;
+  max-width: 680px;
+  color: #627079;
+  font-size: 15px;
+  line-height: 1.8;
 }
 
-/* 响应式设计 - 屏幕宽度小于1200px */
+.product-list {
+  margin-top: 0;
+}
+
+.product-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: -16px;
+  padding: 0 20px;
+}
+
+.product-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 24px rgba(18, 56, 35, 0.08);
+}
+
+.product-panel {
+  padding: 50px 22px 18px;
+  border: 1px solid #e6efe7;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 249, 0.98)),
+    radial-gradient(circle at top left, rgba(70, 160, 102, 0.06), transparent 34%);
+  box-shadow: 0 18px 42px rgba(24, 73, 43, 0.06);
+}
+
+.product-section::before,
+.policy-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  pointer-events: none;
+}
+
+.product-section::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.14));
+}
+
+.product-card {
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid #e7efe8;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(18, 56, 35, 0.06);
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 40px rgba(18, 56, 35, 0.12);
+}
+
+.product-image {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.06);
+}
+
+.product-tag {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(22, 119, 72, 0.9);
+  color: #fff;
+  font-size: 12px;
+}
+
+.product-info {
+  padding: 18px 18px 20px;
+}
+
+.product-name {
+  margin: 0 0 10px;
+  color: #213547;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-origin {
+  margin: 0 0 16px;
+  color: #74818a;
+  font-size: 13px;
+}
+
+.product-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.current-price {
+  color: #e25b3d;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.product-action {
+  color: #2b8a52;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.policy-section {
+  padding: 34px;
+  border: 1px solid #e6efe7;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(70, 160, 102, 0.12), transparent 30%),
+    linear-gradient(180deg, #f8fdf9 0%, #ffffff 100%);
+  box-shadow: 0 18px 42px rgba(24, 73, 43, 0.06);
+}
+
+.policy-preview {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+}
+
+.policy-featured {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 260px;
+  padding: 26px;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #1f5c38 0%, #2f7d4e 70%, #4ea56d 100%);
+  color: #fff;
+  box-shadow: 0 22px 40px rgba(22, 87, 50, 0.18);
+  cursor: pointer;
+}
+
+.featured-topline,
+.featured-meta,
+.policy-mini-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.featured-badge,
+.policy-mini-tag {
+  display: inline-flex;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.featured-badge {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.featured-region,
+.featured-meta {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+}
+
+.featured-title {
+  margin: 20px 0 14px;
+  font-size: 28px;
+  line-height: 1.35;
+}
+
+.featured-summary {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.85;
+}
+
+.policy-side-list {
+  display: grid;
+  gap: 16px;
+}
+
+.policy-mini-card {
+  padding: 20px 22px;
+  border: 1px solid #dfebdf;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 14px 24px rgba(27, 78, 47, 0.06);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.policy-mini-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 28px rgba(27, 78, 47, 0.1);
+}
+
+.policy-mini-tag {
+  background: #edf7f0;
+  color: #287548;
+  font-weight: 600;
+}
+
+.policy-mini-date {
+  color: #7b8790;
+  font-size: 12px;
+}
+
+.policy-mini-title {
+  margin: 14px 0 10px;
+  color: #213547;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.policy-mini-summary {
+  margin: 0;
+  color: #627079;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.policy-empty {
+  padding: 12px 0;
+}
+
+.empty-state-card {
+  padding: 12px;
+  border: 1px dashed rgba(92, 153, 88, 0.22);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.empty-state-text strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #254431;
+  font-size: 18px;
+}
+
+.empty-state-text p {
+  margin: 0;
+  color: #6d8177;
+  line-height: 1.8;
+}
+
 @media (max-width: 1200px) {
-    .main-content {
-        padding: 15px; /* 调整内边距 */
-    }
+  .banner-content {
+    left: 48px;
+    bottom: 60px;
+    max-width: 540px;
+  }
 
-    .banner-content {
-        left: 50px; /* 调整左侧距离 */
-        bottom: 80px; /* 调整底部距离 */
-        max-width: 500px; /* 调整最大宽度 */
-    }
-
-    .banner-title {
-        font-size: 36px; /* 调整字体大小 */
-    }
+  .banner-title {
+    font-size: 38px;
+  }
 }
 
-/* 响应式设计 - 屏幕宽度小于992px */
 @media (max-width: 992px) {
-    .banner-content {
-        left: 30px; /* 调整左侧距离 */
-        bottom: 60px; /* 调整底部距离 */
-        max-width: 400px; /* 调整最大宽度 */
-    }
+  .value-strip {
+    grid-template-columns: 1fr;
+    margin-top: 0;
+  }
 
-    .banner-title {
-        font-size: 32px; /* 调整字体大小 */
-    }
+  .policy-preview {
+    grid-template-columns: 1fr;
+  }
 
-    .banner-description {
-        font-size: 16px; /* 调整字体大小 */
-    }
+  .product-header,
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
-/* 响应式设计 - 屏幕宽度小于768px */
 @media (max-width: 768px) {
-    .banner-content {
-        left: 20px; /* 调整左侧距离 */
-        bottom: 40px; /* 调整底部距离 */
-        max-width: 300px; /* 调整最大宽度 */
-    }
+  .main-content {
+    padding: 16px 14px 40px;
+  }
 
-    .banner-title {
-        font-size: 28px; /* 调整字体大小 */
-    }
+  .value-card {
+    padding: 20px 18px;
+  }
 
-    .banner-description {
-        font-size: 14px; /* 调整字体大小 */
-    }
+  .banner-content {
+    left: 24px;
+    right: 24px;
+    bottom: 34px;
+    max-width: none;
+  }
 
-    .banner-actions .el-button {
-        display: block; /* 块级显示 */
-        width: 80%; /* 宽度80% */
-        margin: 10px auto; /* 外边距自动居中 */
-    }
+  .banner-title {
+    font-size: 30px;
+  }
 
-    .section-title {
-        font-size: 28px; /* 调整字体大小 */
-    }
+  .banner-description {
+    font-size: 14px;
+  }
 
-    .product-card {
-        margin-bottom: 20px; /* 调整底部外边距 */
-    }
+  .banner-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .policy-section {
+    padding: 22px 18px;
+  }
+
+  .product-header {
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  .product-panel {
+    padding: 22px 16px 12px;
+  }
 }
 </style>
+
+
+
+
+

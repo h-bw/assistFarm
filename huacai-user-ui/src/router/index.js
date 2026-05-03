@@ -70,7 +70,8 @@ export const constantRoutes = [
           {
             path: 'profile',
             component: () => import('@/views/system/user/profile/index'),
-            hidden: true
+            hidden: true,
+            meta: { requiresAuth: true }
           },
           {
             path: 'home',
@@ -81,6 +82,7 @@ export const constantRoutes = [
             path: 'auth',
             component: () => import('@/views/HomePage/auth'),
             hidden: true,
+            meta: { requiresAuth: true }
           },
           {
             path: 'products',
@@ -91,16 +93,19 @@ export const constantRoutes = [
             path: 'shoppingCart',
             component: () => import('@/views/HomePage/shoppingCart'),
             hidden: true,
+            meta: { requiresAuth: true }
           },
           {
             path: 'checkout',
             component: () => import('@/views/HomePage/checkout'),
             hidden: true,
+            meta: { requiresAuth: true }
           },
           {
             path: 'myOrder',
             component: () => import('@/views/HomePage/myOrder'),
             hidden: true,
+            meta: { requiresAuth: true }
           },
           {
             path: 'policies',

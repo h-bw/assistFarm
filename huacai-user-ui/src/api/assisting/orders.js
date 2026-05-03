@@ -50,3 +50,11 @@ export function payment(ordersIds) {
     method: 'put'
   })
 }
+
+// 鏌ヨ鏀粯缁撴灉骞舵洿鏂拌鍗曠姸鎬?
+export function queryPaymentStatus(ordersId) {
+  return request({
+    url: `/api/pay/query/${ordersId}`,
+    method: 'get'
+  })
+}

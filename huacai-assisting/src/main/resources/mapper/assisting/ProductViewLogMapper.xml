@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.huacai.assisting.mapper.ProductViewLogMapper">
+
+    <insert id="upsertProductViewLog" parameterType="ProductViewLog">
+        insert into product_view_log (
+            view_id,
+            user_id,
+            products_id,
+            view_source,
+            view_count,
+            last_view_time,
+            create_time,
+            update_time
+        ) values (
+            #{viewId},
+            #{userId},
+            #{productsId},
+            #{viewSource},
+            #{viewCount},
+            #{lastViewTime},
+            #{createTime},
+            #{updateTime}
+        )
+        on duplicate key update
+            view_count = ifnull(view_count, 0) + values(view_count),
+            view_source = values(view_source),
+            last_view_time = values(last_view_time),
+            update_time = values(update_time)
+    </insert>
+
+    <select id="selectRecentProductIdsByUserId" resultType="java.lang.String">
+        select products_id
+        from product_view_log
+        where user_id = #{userId}
+        group by products_id
+        order by max(last_view_time) desc
+        limit #{limit}
+    </select>
+</mapper>

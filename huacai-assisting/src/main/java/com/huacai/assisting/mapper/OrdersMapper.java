@@ -1,9 +1,13 @@
 package com.huacai.assisting.mapper;
 
 import java.util.List;
+import java.util.Map;
 import com.huacai.assisting.domain.Orders;
 import com.huacai.assisting.domain.OrdersProducts;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
+@Mapper
 /**
  * 订单Mapper接口
  * 
@@ -84,4 +88,35 @@ public interface OrdersMapper
      * @return 结果
      */
     public int deleteOrdersProductsByOrdersId(String ordersId);
+
+    /**
+     * 获取用户-商品交互数据（用于相似度计算）
+     * @param status 订单状态（如“已完成”）
+     * @return 包含 user_id, products_id, interaction 的 Map 列表
+     */
+    List<Map<String, Object>> selectUserProductInteractions(@Param("status") String status);
+
+    /**
+     * 获取用户最近购买的商品ID（用于推荐）
+     * @param userId 用户ID
+     * @param limit 限制数量
+     * @return 商品ID列表
+     */
+    List<String> selectRecentProductIdsByUserId(@Param("userId") Long userId, @Param("limit") int limit);
+
+    /**
+     * 获取热门商品ID（按总销量排序）
+     * @param limit 限制数量
+     * @return 商品ID列表
+     */
+    List<String> selectHotProductIds(@Param("limit") int limit);
+
+    /**
+     * 获取用户的复购候选商品及统计信息
+     * @param userId 用户ID
+     * @param limit 限制数量
+     * @return 包含 products_id、order_count、total_quantity、last_purchase_time 的 Map 列表
+     */
+    List<Map<String, Object>> selectRepurchaseCandidatesByUserId(@Param("userId") Long userId, @Param("limit") int limit);
+
 }

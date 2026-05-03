@@ -3,6 +3,8 @@ package com.huacai.system.service.impl;
 import java.util.Collection;
 import java.util.List;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.huacai.common.annotation.DataSource;
@@ -25,6 +27,8 @@ import com.huacai.system.service.ISysConfigService;
 @Service
 public class SysConfigServiceImpl implements ISysConfigService
 {
+    private static final Logger log = LoggerFactory.getLogger(SysConfigServiceImpl.class);
+
     @Autowired
     private SysConfigMapper configMapper;
 
@@ -37,7 +41,15 @@ public class SysConfigServiceImpl implements ISysConfigService
     @PostConstruct
     public void init()
     {
-        loadingConfigCache();
+        try
+        {
+            loadingConfigCache();
+        }
+        catch (Exception e)
+        {
+            // Allow the application to boot even when Redis is temporarily unavailable.
+            log.warn("Redis unavailable during system config cache initialization, falling back to database reads.", e);
+        }
     }
 
     /**
@@ -64,17 +76,31 @@ public class SysConfigServiceImpl implements ISysConfigService
     @Override
     public String selectConfigByKey(String configKey)
     {
-        String configValue = Convert.toStr(redisCache.getCacheObject(getCacheKey(configKey)));
-        if (StringUtils.isNotEmpty(configValue))
+        try
         {
-            return configValue;
+            String configValue = Convert.toStr(redisCache.getCacheObject(getCacheKey(configKey)));
+            if (StringUtils.isNotEmpty(configValue))
+            {
+                return configValue;
+            }
+        }
+        catch (Exception e)
+        {
+            log.warn("Failed to read system config [{}] from Redis, falling back to database.", configKey, e);
         }
         SysConfig config = new SysConfig();
         config.setConfigKey(configKey);
         SysConfig retConfig = configMapper.selectConfig(config);
         if (StringUtils.isNotNull(retConfig))
         {
-            redisCache.setCacheObject(getCacheKey(configKey), retConfig.getConfigValue());
+            try
+            {
+                redisCache.setCacheObject(getCacheKey(configKey), retConfig.getConfigValue());
+            }
+            catch (Exception e)
+            {
+                log.warn("Failed to write system config [{}] to Redis cache.", configKey, e);
+            }
             return retConfig.getConfigValue();
         }
         return StringUtils.EMPTY;

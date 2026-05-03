@@ -1,0 +1,75 @@
+@startuml
+scale 0.95
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName SimSun
+skinparam defaultFontSize 13
+skinparam packageStyle rectangle
+skinparam rectangle {
+  RoundCorner 14
+  Padding 8
+}
+left to right direction
+
+package "前端展示层" as FE {
+  rectangle "Recommend 组件" as FE1
+  rectangle "商品页\n猜你喜欢" as FE2
+  rectangle "购物车页\n搭配购买推荐" as FE3
+  rectangle "订单页\n再次购买推荐" as FE4
+}
+
+package "接口控制层" as CTL {
+  rectangle "RecommendationController" as C1
+}
+
+package "推荐服务层" as SRV {
+  rectangle "RecommendationService" as S1
+  rectangle "默认推荐策略\ndefault" as S2
+  rectangle "复购推荐策略\nbuy_again" as S3
+  rectangle "搭配购买策略\ncross_sell" as S4
+  rectangle "推荐理由生成" as S5
+}
+
+package "数据与计算层" as DATA {
+  rectangle "ItemSimilarityService\n商品相似度计算" as D1
+  rectangle "OrdersMapper\n订单与复购统计" as D2
+  rectangle "ProductsMapper\n商品信息与顺序返回" as D3
+  rectangle "item_similarity 表" as D4
+}
+
+FE1 -down-> FE2
+FE1 -down-> FE3
+FE1 -down-> FE4
+
+FE2 --> C1
+FE3 --> C1
+FE4 --> C1
+
+C1 --> S1
+
+S1 --> S2
+S1 --> S3
+S1 --> S4
+S1 --> S5
+
+S2 --> D1
+S2 --> D2
+S2 --> D3
+
+S3 --> D2
+S3 --> D3
+
+S4 --> D1
+S4 --> D3
+
+D1 --> D4
+
+note bottom of S1
+  推荐服务统一负责：
+  1. 场景分发
+  2. 候选召回
+  3. 业务重排
+  4. 推荐理由输出
+end note
+
+@enduml
